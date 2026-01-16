@@ -482,7 +482,7 @@ struct SnippetRow: View {
                 if snippet.isFavorite {
                     Image(systemName: "star.fill")
                         .font(.system(size: 10))
-                        .foregroundColor(.yellow.opacity(0.7))
+                        .foregroundColor(.cmText.opacity(0.7))
                 }
 
                 // Chevron
@@ -540,7 +540,7 @@ struct SnippetRow: View {
                         Text(showCopiedFeedback ? "Copied" : "Copy")
                     }
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(showCopiedFeedback ? .green : .cmSecondary)
+                    .foregroundColor(showCopiedFeedback ? .cmText : .cmSecondary)
                 }
                 .buttonStyle(.plain)
 
@@ -550,7 +550,7 @@ struct SnippetRow: View {
                         Text(snippet.isFavorite ? "Starred" : "Star")
                     }
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(snippet.isFavorite ? .yellow : .cmSecondary)
+                    .foregroundColor(snippet.isFavorite ? .cmText : .cmSecondary)
                 }
                 .buttonStyle(.plain)
 
@@ -636,7 +636,7 @@ struct FolderSettingsView: View {
                             Spacer()
                             Button(action: { manager.removeWatchedFolder(folder) }) {
                                 Image(systemName: "minus.circle")
-                                    .foregroundColor(.red.opacity(0.7))
+                                    .foregroundColor(.cmSecondary.opacity(0.7))
                             }
                             .buttonStyle(.plain)
                         }

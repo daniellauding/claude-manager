@@ -224,7 +224,7 @@ struct NewsRow: View {
                     Button(action: onStar) {
                         Image(systemName: item.isStarred ? "star.fill" : "star")
                             .font(.system(size: 12))
-                            .foregroundColor(item.isStarred ? .yellow : .cmTertiary)
+                            .foregroundColor(item.isStarred ? .cmText : .cmTertiary)
                     }
                     .buttonStyle(.plain)
 
@@ -284,7 +284,7 @@ struct NewsRow: View {
                             Text("Read Article")
                                 .font(.system(size: 12, weight: .medium))
                         }
-                        .foregroundColor(.blue)
+                        .foregroundColor(.cmText)
                     }
                     .buttonStyle(.plain)
                 }
@@ -409,7 +409,7 @@ struct SourceEditorSheet: View {
             Button(action: { manager.toggleSourceEnabled(source) }) {
                 Image(systemName: source.isEnabled ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 16))
-                    .foregroundColor(source.isEnabled ? .green : .cmTertiary)
+                    .foregroundColor(source.isEnabled ? .cmText : .cmTertiary)
             }
             .buttonStyle(.plain)
 
@@ -438,7 +438,7 @@ struct SourceEditorSheet: View {
                 Button(action: { manager.deleteSource(source) }) {
                     Image(systemName: "trash")
                         .font(.system(size: 12))
-                        .foregroundColor(.red.opacity(0.7))
+                        .foregroundColor(.cmSecondary.opacity(0.7))
                 }
                 .buttonStyle(.plain)
             }

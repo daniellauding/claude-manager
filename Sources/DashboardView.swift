@@ -21,13 +21,10 @@ struct DashboardView: View {
                 // Quick Actions Grid
                 quickActionsGrid
 
-                // News Preview
-                newsPreviewSection
-
                 // Recent Library Items
                 recentLibrarySection
 
-                // Footer with links
+                // Footer
                 footerLinksSection
             }
             .padding(20)
@@ -84,38 +81,35 @@ struct DashboardView: View {
                 icon: "terminal",
                 value: "\(processManager.instances.count)",
                 label: "Instances",
-                color: processManager.instances.isEmpty ? .cmTertiary : .green,
                 action: { onNavigate(.instances) }
             )
 
             statCard(
                 icon: "books.vertical",
                 value: "\(snippetManager.snippets.count)",
-                label: "Library Items",
-                color: .blue,
+                label: "Library",
                 action: { onNavigate(.snippets) }
             )
 
             statCard(
-                icon: "star.fill",
-                value: "\(newsManager.starredItems.count)",
-                label: "Saved Articles",
-                color: .yellow,
+                icon: "newspaper",
+                value: "\(newsManager.items.count)",
+                label: "News",
                 action: { onNavigate(.news) }
             )
         }
     }
 
-    private func statCard(icon: String, value: String, label: String, color: Color, action: @escaping () -> Void) -> some View {
+    private func statCard(icon: String, value: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
                 HStack(spacing: 6) {
                     Image(systemName: icon)
-                        .font(.system(size: 14))
-                        .foregroundColor(color)
+                        .font(.system(size: 12))
+                        .foregroundColor(.cmSecondary)
 
                     Text(value)
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
                         .foregroundColor(.cmText)
                 }
 
@@ -124,9 +118,9 @@ struct DashboardView: View {
                     .foregroundColor(.cmTertiary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(Color.cmBorder.opacity(0.1))
-            .cornerRadius(12)
+            .padding(.vertical, 14)
+            .background(Color.cmBorder.opacity(0.08))
+            .cornerRadius(10)
         }
         .buttonStyle(.plain)
     }
@@ -145,20 +139,20 @@ struct DashboardView: View {
                 GridItem(.flexible()),
                 GridItem(.flexible())
             ], spacing: 10) {
-                quickActionButton(icon: "plus.circle", label: "New Claude", color: .green) {
+                quickActionButton(icon: "plus.circle", label: "New Claude", color: .cmText) {
                     launchClaude()
                 }
 
-                quickActionButton(icon: "doc.badge.plus", label: "New Snippet", color: .blue) {
+                quickActionButton(icon: "doc.badge.plus", label: "New Snippet", color: .cmText) {
                     onNavigate(.snippets)
                 }
 
-                quickActionButton(icon: "arrow.clockwise", label: "Refresh", color: .orange) {
+                quickActionButton(icon: "arrow.clockwise", label: "Refresh", color: .cmText) {
                     processManager.refresh()
                     newsManager.refresh()
                 }
 
-                quickActionButton(icon: "newspaper", label: "Read News", color: .purple) {
+                quickActionButton(icon: "newspaper", label: "Read News", color: .cmText) {
                     onNavigate(.news)
                 }
             }
@@ -180,105 +174,6 @@ struct DashboardView: View {
             .padding(.vertical, 14)
             .background(Color.cmBorder.opacity(0.08))
             .cornerRadius(10)
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - News Preview
-
-    private var newsPreviewSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Latest News")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.cmText)
-
-                Spacer()
-
-                Button(action: { onNavigate(.news) }) {
-                    Text("See All")
-                        .font(.system(size: 11))
-                        .foregroundColor(.cmSecondary)
-                }
-                .buttonStyle(.plain)
-            }
-
-            if newsManager.items.isEmpty {
-                HStack {
-                    Spacer()
-                    VStack(spacing: 8) {
-                        Image(systemName: "newspaper")
-                            .font(.system(size: 20, weight: .light))
-                            .foregroundColor(.cmTertiary)
-                        Text("Loading news...")
-                            .font(.system(size: 11))
-                            .foregroundColor(.cmTertiary)
-                    }
-                    .padding(.vertical, 20)
-                    Spacer()
-                }
-                .background(Color.cmBorder.opacity(0.05))
-                .cornerRadius(10)
-                .onAppear {
-                    if newsManager.items.isEmpty {
-                        newsManager.refresh()
-                    }
-                }
-            } else {
-                VStack(spacing: 1) {
-                    ForEach(newsManager.items.prefix(4)) { item in
-                        newsPreviewRow(item)
-                    }
-                }
-                .background(Color.cmBorder.opacity(0.05))
-                .cornerRadius(10)
-            }
-        }
-    }
-
-    private func newsPreviewRow(_ item: NewsItem) -> some View {
-        Button(action: { newsManager.openInBrowser(item) }) {
-            HStack(spacing: 10) {
-                // Star indicator
-                if item.isStarred {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 8))
-                        .foregroundColor(.yellow)
-                } else {
-                    Circle()
-                        .fill(item.isRead ? Color.clear : Color.blue)
-                        .frame(width: 6, height: 6)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.title)
-                        .font(.system(size: 12, weight: item.isRead ? .regular : .medium))
-                        .foregroundColor(item.isRead ? .cmSecondary : .cmText)
-                        .lineLimit(1)
-
-                    HStack(spacing: 6) {
-                        Text(item.source)
-                            .font(.system(size: 9))
-                            .foregroundColor(.cmTertiary)
-
-                        if !item.pubDateFormatted.isEmpty {
-                            Text("·")
-                                .foregroundColor(.cmTertiary)
-                            Text(item.pubDateFormatted)
-                                .font(.system(size: 9))
-                                .foregroundColor(.cmTertiary)
-                        }
-                    }
-                }
-
-                Spacer()
-
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: 9))
-                    .foregroundColor(.cmTertiary)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
         }
         .buttonStyle(.plain)
     }
@@ -315,7 +210,7 @@ struct DashboardView: View {
                         Button(action: { onNavigate(.snippets) }) {
                             Text("Add First Item")
                                 .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(.blue)
+                                .foregroundColor(.cmText)
                         }
                         .buttonStyle(.plain)
                     }
@@ -364,7 +259,7 @@ struct DashboardView: View {
                         if snippet.isFavorite {
                             Image(systemName: "star.fill")
                                 .font(.system(size: 8))
-                                .foregroundColor(.yellow)
+                                .foregroundColor(.cmText)
                         }
                     }
                 }
@@ -381,43 +276,16 @@ struct DashboardView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Footer Links
+    // MARK: - Footer
 
     private var footerLinksSection: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             Divider()
 
-            HStack(spacing: 16) {
-                footerLink(icon: "book", label: "Docs", url: "https://docs.anthropic.com")
-                footerLink(icon: "bubble.left.and.bubble.right", label: "Discord", url: "https://discord.gg/anthropic")
-                footerLink(icon: "chevron.left.forwardslash.chevron.right", label: "GitHub", url: "https://github.com/anthropics")
-                footerLink(icon: "graduationcap", label: "Learn", url: "https://www.anthropic.com/claude")
-            }
-
-            Text("Claude Manager v\(AppInfo.version) · by \(AppInfo.author)")
+            Text("v\(AppInfo.version) · \(AppInfo.author)")
                 .font(.system(size: 10))
-                .foregroundColor(.cmTertiary.opacity(0.6))
+                .foregroundColor(.cmTertiary.opacity(0.5))
         }
-    }
-
-    private func footerLink(icon: String, label: String, url: String) -> some View {
-        Button(action: {
-            if let url = URL(string: url) {
-                NSWorkspace.shared.open(url)
-            }
-        }) {
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundColor(.cmTertiary)
-
-                Text(label)
-                    .font(.system(size: 9))
-                    .foregroundColor(.cmTertiary)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Actions

@@ -281,10 +281,10 @@ struct DiscoverView: View {
                         Text(savedIds.contains(item.id) ? "Saved!" : "Save to Library")
                     }
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(savedIds.contains(item.id) ? .green : .cmBackground)
+                    .foregroundColor(savedIds.contains(item.id) ? .cmText : .cmBackground)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
-                    .background(savedIds.contains(item.id) ? Color.green.opacity(0.15) : Color.cmText)
+                    .background(savedIds.contains(item.id) ? Color.cmText.opacity(0.15) : Color.cmText)
                     .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
@@ -3045,7 +3045,7 @@ struct DiscoverRow: View {
                         if isSaved {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 10))
-                                .foregroundColor(.green)
+                                .foregroundColor(.cmText)
                         }
                     }
 

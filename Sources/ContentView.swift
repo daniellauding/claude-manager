@@ -586,7 +586,7 @@ struct InstanceRow: View {
                             }
                         }
                         .buttonStyle(.borderless)
-                        .foregroundColor(.red.opacity(0.8))
+                        .foregroundColor(.cmSecondary.opacity(0.8))
                     }
                     .padding(.leading, 36)
                     .padding(.top, 4)

@@ -94,15 +94,15 @@ struct SettingsView: View {
                     HStack {
                         Image(systemName: "arrow.counterclockwise")
                             .font(.system(size: 14))
-                            .foregroundColor(.red)
+                            .foregroundColor(.cmSecondary)
                         Text("Reset All Settings")
                             .font(.system(size: 13))
-                            .foregroundColor(.red)
+                            .foregroundColor(.cmSecondary)
                         Spacer()
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    .background(Color.red.opacity(0.1))
+                    .background(Color.cmSecondary.opacity(0.1))
                     .cornerRadius(8)
                 }
                 .buttonStyle(.plain)
@@ -181,7 +181,7 @@ struct SettingsView: View {
                 }) {
                     Text(AppInfo.author)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.blue)
+                        .foregroundColor(.cmText)
                 }
                 .buttonStyle(.plain)
 
@@ -245,7 +245,7 @@ struct SettingsView: View {
                 if let message = exportMessage {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundColor(.cmText)
                         Text(message)
                             .font(.system(size: 11))
                             .foregroundColor(.cmSecondary)
@@ -255,7 +255,7 @@ struct SettingsView: View {
                 if let message = importMessage {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundColor(.cmText)
                         Text(message)
                             .font(.system(size: 11))
                             .foregroundColor(.cmSecondary)
@@ -618,11 +618,11 @@ struct WhatsNewView: View {
 
     private func itemColor(for item: String) -> Color {
         if item.hasPrefix("New:") {
-            return .green
+            return .cmText
         } else if item.hasPrefix("Changed:") || item.hasPrefix("Added:") {
-            return .blue
+            return .cmText
         } else if item.hasPrefix("Fixed:") {
-            return .orange
+            return .cmSecondary
         }
         return .cmTertiary
     }
