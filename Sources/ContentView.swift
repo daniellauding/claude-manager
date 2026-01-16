@@ -10,23 +10,44 @@ extension Color {
     static let cmTertiary = Color(NSColor.tertiaryLabelColor)
 }
 
+enum AppTab: String, CaseIterable {
+    case instances = "Instances"
+    case snippets = "Library"
+
+    var icon: String {
+        switch self {
+        case .instances: return "terminal"
+        case .snippets: return "books.vertical"
+        }
+    }
+}
+
 struct ContentView: View {
-    @StateObject private var manager = ClaudeProcessManager()
+    @ObservedObject var manager: ClaudeProcessManager
+    @ObservedObject var snippetManager: SnippetManager
     @State private var showingKillConfirmation = false
     @State private var instanceToKill: ClaudeInstance?
+    @State private var expandedInstances: Set<Int32> = []
+    @State private var selectedTab: AppTab = .instances
+
+    init(manager: ClaudeProcessManager, snippetManager: SnippetManager) {
+        self.manager = manager
+        self.snippetManager = snippetManager
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            headerView
+            // Tab bar
+            tabBar
 
             Divider()
 
-            // Content
-            if manager.instances.isEmpty {
-                emptyStateView
-            } else {
-                instanceListView
+            // Content based on selected tab
+            switch selectedTab {
+            case .instances:
+                instancesContent
+            case .snippets:
+                SnippetView(manager: snippetManager)
             }
 
             Divider()
@@ -34,7 +55,7 @@ struct ContentView: View {
             // Footer
             footerView
         }
-        .frame(width: 440, height: 540)
+        .frame(minWidth: 520, maxWidth: 800, minHeight: 450, maxHeight: 900)
         .background(Color.cmBackground)
         .onAppear {
             manager.refresh()
@@ -49,48 +70,101 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Header
-    private var headerView: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "terminal")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.cmText)
+    // MARK: - Tab Bar
+    private var tabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(AppTab.allCases, id: \.self) { tab in
+                Button(action: { selectedTab = tab }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: tab.icon)
+                            .font(.system(size: 12))
+                        Text(tab.rawValue)
+                            .font(.system(size: 12, weight: .medium))
 
-            Text("Claude Manager")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.cmText)
+                        // Badge for instances
+                        if tab == .instances && !manager.instances.isEmpty {
+                            Text("\(manager.instances.count)")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(selectedTab == tab ? .cmBackground : .cmSecondary)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(selectedTab == tab ? Color.cmText : Color.cmBorder)
+                                .cornerRadius(8)
+                        }
+
+                        // Badge for snippets
+                        if tab == .snippets && !snippetManager.snippets.isEmpty {
+                            Text("\(snippetManager.snippets.count)")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(selectedTab == tab ? .cmBackground : .cmSecondary)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(selectedTab == tab ? Color.cmText : Color.cmBorder)
+                                .cornerRadius(8)
+                        }
+                    }
+                    .foregroundColor(selectedTab == tab ? .cmText : .cmSecondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(selectedTab == tab ? Color.cmBorder.opacity(0.3) : Color.clear)
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut(tab == .instances ? "1" : "2", modifiers: .command)
+            }
 
             Spacer()
 
-            // Stats summary
-            if !manager.instances.isEmpty {
-                let totalCPU = manager.instances.reduce(0.0) { $0 + $1.cpuPercent }
-                let totalMem = manager.instances.reduce(0) { $0 + $1.memoryKB }
-                Text("\(manager.instances.count) · \(String(format: "%.0f%%", totalCPU)) · \(formatMemory(totalMem))")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundColor(.cmSecondary)
-            }
+            // Actions for current tab
+            if selectedTab == .instances {
+                Button(action: { launchClaude() }) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .buttonStyle(.borderless)
+                .foregroundColor(.cmText)
+                .keyboardShortcut("n", modifiers: .command)
+                .help("New Claude session (Cmd+N)")
 
-            Button(action: { launchClaude() }) {
-                Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .medium))
+                Button(action: { manager.refresh() }) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 12, weight: .medium))
+                        .rotationEffect(.degrees(manager.isLoading ? 360 : 0))
+                        .animation(manager.isLoading ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: manager.isLoading)
+                }
+                .buttonStyle(.borderless)
+                .foregroundColor(.cmText)
+                .keyboardShortcut("r", modifiers: .command)
+                .help("Refresh (Cmd+R)")
+                .padding(.trailing, 16)
             }
-            .buttonStyle(.borderless)
-            .foregroundColor(.cmText)
-            .help("New Claude session (⌘N)")
-
-            Button(action: { manager.refresh() }) {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 12, weight: .medium))
-                    .rotationEffect(.degrees(manager.isLoading ? 360 : 0))
-                    .animation(manager.isLoading ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: manager.isLoading)
-            }
-            .buttonStyle(.borderless)
-            .foregroundColor(.cmText)
-            .help("Refresh")
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+    }
+
+    // MARK: - Instances Content
+    private var instancesContent: some View {
+        VStack(spacing: 0) {
+            // Header with stats
+            if !manager.instances.isEmpty {
+                HStack {
+                    let totalCPU = manager.instances.reduce(0.0) { $0 + $1.cpuPercent }
+                    let totalMem = manager.instances.reduce(0) { $0 + $1.memoryKB }
+                    Text("\(manager.instances.count) instances \u{00B7} \(String(format: "%.0f%%", totalCPU)) CPU \u{00B7} \(formatMemory(totalMem))")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundColor(.cmSecondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.cmBorder.opacity(0.1))
+            }
+
+            // Content
+            if manager.instances.isEmpty {
+                emptyStateView
+            } else {
+                instanceListView
+            }
+        }
     }
 
     // MARK: - Empty State
@@ -129,6 +203,14 @@ struct ContentView: View {
                 ForEach(manager.instances) { instance in
                     InstanceRow(
                         instance: instance,
+                        isExpanded: expandedInstances.contains(instance.pid),
+                        onToggleExpand: {
+                            if expandedInstances.contains(instance.pid) {
+                                expandedInstances.remove(instance.pid)
+                            } else {
+                                expandedInstances.insert(instance.pid)
+                            }
+                        },
                         onFocus: { focusInstance($0) },
                         onKill: { inst, force in
                             if force {
@@ -148,13 +230,35 @@ struct ContentView: View {
     // MARK: - Footer
     private var footerView: some View {
         HStack(spacing: 16) {
-            if !manager.instances.isEmpty {
-                Button(action: { manager.killAll() }) {
-                    Text("Stop All")
-                        .font(.system(size: 11, weight: .medium))
+            if selectedTab == .instances {
+                if !manager.instances.isEmpty {
+                    Button(action: {
+                        if expandedInstances.isEmpty {
+                            expandedInstances = Set(manager.instances.map { $0.pid })
+                        } else {
+                            expandedInstances.removeAll()
+                        }
+                    }) {
+                        Text(expandedInstances.isEmpty ? "Expand All" : "Collapse All")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundColor(.cmSecondary)
+
+                    Button(action: { manager.killAll() }) {
+                        Text("Stop All")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundColor(.cmSecondary)
                 }
-                .buttonStyle(.borderless)
-                .foregroundColor(.cmSecondary)
+            } else {
+                // Snippets tab footer
+                if !snippetManager.watchedFolders.isEmpty {
+                    Text("\(snippetManager.watchedFolders.count) folder(s) watched")
+                        .font(.system(size: 10))
+                        .foregroundColor(.cmTertiary)
+                }
             }
 
             Spacer()
@@ -219,28 +323,38 @@ struct ContentView: View {
 // MARK: - Instance Row
 struct InstanceRow: View {
     let instance: ClaudeInstance
+    let isExpanded: Bool
+    let onToggleExpand: () -> Void
     let onFocus: (ClaudeInstance) -> Void
     let onKill: (ClaudeInstance, Bool) -> Void
 
     @State private var isHovering = false
-    @State private var showActions = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 0) {
             // Main row - clickable
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
+                // Expand/collapse chevron
+                Button(action: onToggleExpand) {
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.cmTertiary)
+                        .frame(width: 12)
+                }
+                .buttonStyle(.plain)
+
                 // Index badge
                 Text("\(instance.index)")
                     .font(.system(size: 10, weight: .semibold, design: .monospaced))
                     .foregroundColor(.cmTertiary)
-                    .frame(width: 16)
+                    .frame(width: 14)
 
                 // PID
                 Text("\(instance.pid)")
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundColor(.cmText)
 
-                // Type badge
+                // Type badge with tooltip
                 HStack(spacing: 4) {
                     if instance.isSSH {
                         Image(systemName: "network")
@@ -254,6 +368,16 @@ struct InstanceRow: View {
                 .padding(.vertical, 2)
                 .background(Color.cmBorder.opacity(0.5))
                 .cornerRadius(3)
+                .help(instance.type.description)
+
+                // Session title (if available)
+                if let title = instance.sessionTitle {
+                    Text(title)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.cmText)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
 
                 Spacer()
 
@@ -277,109 +401,127 @@ struct InstanceRow: View {
             .onTapGesture {
                 onFocus(instance)
             }
+            .padding(.vertical, 8)
 
-            // Details (shown on hover or always for info)
-            if isHovering || instance.folder != nil || instance.prompt != nil {
-                VStack(alignment: .leading, spacing: 4) {
-                    // Started time
-                    HStack(spacing: 6) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 9))
-                        Text(instance.startTimeFormatted)
-                            .font(.system(size: 10))
-                        if let tty = instance.tty, tty != "??" {
-                            Text("·")
-                            Text(tty)
-                                .font(.system(size: 10, design: .monospaced))
-                        }
+            // Expanded details
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 6) {
+                    Divider()
+                        .padding(.leading, 36)
+
+                    // Time info
+                    DetailRow(icon: "clock", label: "Started", value: instance.startTimeFormatted)
+
+                    // TTY
+                    if let tty = instance.tty, tty != "??" {
+                        DetailRow(icon: "terminal", label: "TTY", value: tty)
                     }
-                    .foregroundColor(.cmTertiary)
 
-                    // Folder
+                    // Working directory
                     if let folder = instance.folder {
-                        HStack(spacing: 6) {
-                            Image(systemName: "folder")
-                                .font(.system(size: 9))
-                            Text(folder)
-                                .font(.system(size: 10))
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
-                        .foregroundColor(.cmTertiary)
+                        DetailRow(icon: "folder", label: "Directory", value: folder, selectable: true)
                     }
 
-                    // Prompt
+                    // Git branch
+                    if let branch = instance.gitBranch {
+                        DetailRow(icon: "arrow.triangle.branch", label: "Branch", value: branch)
+                    }
+
+                    // Session ID
+                    if let sessionId = instance.sessionId {
+                        DetailRow(icon: "number", label: "Session", value: sessionId, selectable: true)
+                    }
+
+                    // First prompt
                     if let prompt = instance.prompt {
-                        HStack(spacing: 6) {
-                            Image(systemName: "text.quote")
-                                .font(.system(size: 9))
-                            Text("\"\(prompt)\"")
-                                .font(.system(size: 10))
-                                .lineLimit(1)
-                                .italic()
-                        }
-                        .foregroundColor(.cmTertiary)
+                        DetailRow(icon: "text.quote", label: "Prompt", value: "\"\(prompt)\"", italic: true)
                     }
+
+                    // Parent process chain
+                    if let chain = instance.parentChain {
+                        DetailRow(icon: "arrow.right.arrow.left", label: "Parents", value: chain)
+                    }
+
+                    // SSH indicator with more info
+                    if instance.isSSH {
+                        DetailRow(icon: "network", label: "SSH", value: "Running over SSH connection")
+                    }
+
+                    // Type explanation
+                    DetailRow(icon: "info.circle", label: "Type Info", value: instance.type.description)
+
+                    Divider()
+                        .padding(.leading, 36)
+
+                    // Actions row
+                    HStack(spacing: 12) {
+                        Button(action: { onFocus(instance) }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.up.forward.app")
+                                    .font(.system(size: 10))
+                                Text("Focus Terminal")
+                                    .font(.system(size: 10, weight: .medium))
+                            }
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundColor(.cmSecondary)
+
+                        Button(action: { copyLaunchCommand() }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.system(size: 10))
+                                Text("Copy Launch Cmd")
+                                    .font(.system(size: 10, weight: .medium))
+                            }
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundColor(.cmSecondary)
+
+                        if let folder = instance.folder {
+                            Button(action: { copyToClipboard(folder) }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "folder")
+                                        .font(.system(size: 10))
+                                    Text("Copy Path")
+                                        .font(.system(size: 10, weight: .medium))
+                                }
+                            }
+                            .buttonStyle(.borderless)
+                            .foregroundColor(.cmSecondary)
+                        }
+
+                        Spacer()
+
+                        Button(action: { onKill(instance, false) }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "stop")
+                                    .font(.system(size: 10))
+                                Text("Stop")
+                                    .font(.system(size: 10, weight: .medium))
+                            }
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundColor(.cmSecondary)
+
+                        Button(action: { onKill(instance, true) }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 10))
+                                Text("Force Kill")
+                                    .font(.system(size: 10, weight: .medium))
+                            }
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundColor(.red.opacity(0.8))
+                    }
+                    .padding(.leading, 36)
+                    .padding(.top, 4)
                 }
-                .padding(.leading, 28)
-            }
-
-            // Actions (shown on hover)
-            if isHovering {
-                HStack(spacing: 12) {
-                    Button(action: { onFocus(instance) }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.up.forward.app")
-                                .font(.system(size: 10))
-                            Text("Focus")
-                                .font(.system(size: 10, weight: .medium))
-                        }
-                    }
-                    .buttonStyle(.borderless)
-                    .foregroundColor(.cmSecondary)
-
-                    Button(action: { copyLaunchCommand() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "doc.on.doc")
-                                .font(.system(size: 10))
-                            Text("Copy")
-                                .font(.system(size: 10, weight: .medium))
-                        }
-                    }
-                    .buttonStyle(.borderless)
-                    .foregroundColor(.cmSecondary)
-
-                    Spacer()
-
-                    Button(action: { onKill(instance, false) }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "stop")
-                                .font(.system(size: 10))
-                            Text("Stop")
-                                .font(.system(size: 10, weight: .medium))
-                        }
-                    }
-                    .buttonStyle(.borderless)
-                    .foregroundColor(.cmSecondary)
-
-                    Button(action: { onKill(instance, true) }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 10))
-                            Text("Force")
-                                .font(.system(size: 10, weight: .medium))
-                        }
-                    }
-                    .buttonStyle(.borderless)
-                    .foregroundColor(.cmSecondary)
-                }
-                .padding(.leading, 28)
-                .padding(.top, 4)
+                .padding(.bottom, 8)
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(isHovering ? Color.cmBorder.opacity(0.3) : Color.clear)
+        .background(isHovering ? Color.cmBorder.opacity(0.2) : Color.clear)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovering = hovering
@@ -398,11 +540,53 @@ struct InstanceRow: View {
     }
 
     private func copyLaunchCommand() {
+        copyToClipboard(instance.launchCommand)
+    }
+
+    private func copyToClipboard(_ text: String) {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(instance.launchCommand, forType: .string)
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+}
+
+// MARK: - Detail Row Component
+struct DetailRow: View {
+    let icon: String
+    let label: String
+    let value: String
+    var selectable: Bool = false
+    var italic: Bool = false
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 9))
+                .foregroundColor(.cmTertiary)
+                .frame(width: 12)
+
+            Text(label + ":")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.cmTertiary)
+                .frame(width: 60, alignment: .leading)
+
+            if selectable {
+                Text(value)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundColor(.cmSecondary)
+                    .lineLimit(2)
+                    .textSelection(.enabled)
+            } else {
+                Text(value)
+                    .font(.system(size: 10))
+                    .italic(italic)
+                    .foregroundColor(.cmSecondary)
+                    .lineLimit(2)
+            }
+        }
+        .padding(.leading, 36)
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView(manager: ClaudeProcessManager(), snippetManager: SnippetManager())
 }

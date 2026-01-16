@@ -1,178 +1,161 @@
 # Claude Manager
 
-A minimalist menu bar app to monitor and manage Claude CLI instances on macOS and Windows.
-
-Similar to [port-killer](https://github.com/productdevbook/port-killer) but for Claude processes.
+A macOS menu bar app to monitor Claude CLI instances and manage your prompts library.
 
 ## Features
 
-- **View all running Claude instances** - PID, runtime, type, CPU%, memory usage
-- **Session context** - Working folder, first prompt, session info
-- **Instance types** - Detect Happy daemon, terminal, or Node.js spawned instances
-- **SSH detection** - Shows if instance is running over SSH
-- **Quick actions** - Focus window, stop (graceful), force stop, kill all
-- **One-click focus** - Click any instance to bring its terminal to front
-- **New session shortcut** - Launch new Claude session from the app
+### Instance Management
+- **View all running Claude instances** - PID, runtime, CPU%, memory usage
+- **Session context** - Working folder, git branch, first prompt
+- **Quick actions** - Focus window, stop, force kill
 - **Auto-refresh** - Updates every 30 seconds
 
-## Screenshots
+### Snippets Library
+- **Organize prompts** - Agents, Skills, Prompts, Templates, MCPs
+- **Tags & Projects** - Categorize and filter your collection
+- **Favorites & Recent** - Quick access to frequently used items
+- **Folder Sync** - Auto-import markdown files from watched folders
 
-```
-┌─────────────────────────────────────────────────┐
-│  ⬛  Claude Manager           1 · 12% · 256M  + ↻│
-├─────────────────────────────────────────────────┤
-│  1  46300  [happy]                    36:13     │
-│     ├─ Jan 14, 10:30 · ttys001                  │
-│     ├─ /Users/you/project                       │
-│     └─ "help me build a feature..."             │
-│     [Focus] [Copy]              [Stop] [Force]  │
-├─────────────────────────────────────────────────┤
-│  Stop All                              Quit     │
-└─────────────────────────────────────────────────┘
-```
+### Discover
+- **50+ Curated Prompts** - Code review, testing, documentation, and more
+- **15+ MCP Configs** - GitHub, Slack, PostgreSQL, Figma, etc.
+- **GitHub Search** - Find community prompts and MCP servers
+- **One-click Save** - Add to your library instantly
 
 ## Installation
 
-### macOS (Swift)
+### Option 1: Homebrew (Recommended)
 
-**Option 1: Build from source**
+```bash
+# Add the tap
+brew tap daniellauding/tap
+
+# Install
+brew install --cask claude-manager
+```
+
+### Option 2: Direct Download
+
+1. Go to [Releases](https://github.com/daniellauding/claude-manager/releases/latest)
+2. Download `ClaudeManager-vX.X.X.zip`
+3. Unzip and drag `ClaudeManager.app` to `/Applications`
+4. Open from Applications (right-click → Open on first launch)
+
+### Option 3: Build from Source
+
 ```bash
 git clone https://github.com/daniellauding/claude-manager.git
 cd claude-manager
 swift build -c release
+./scripts/release.sh 1.2.0
+open ClaudeManager.app
 ```
 
-**Option 2: Run directly**
-```bash
-swift run
-```
+## Quick Start
 
-**Option 3: Install to Applications**
-```bash
-swift build -c release
-cp -r .build/release/ClaudeManager.app /Applications/
-```
+1. **Launch** - Click the menu bar icon (appears top-right)
+2. **Instances** - See all running Claude sessions
+3. **Snippets** - Switch to the Snippets tab (Cmd+2)
+4. **Discover** - Click "Discover" to browse curated prompts
+5. **Save** - Click any prompt → "Save to Library"
 
-### Windows (PowerShell)
+## Keyboard Shortcuts
 
-```powershell
-# Clone the repo
-git clone https://github.com/daniellauding/claude-manager.git
-cd claude-manager/windows
+| Shortcut | Action |
+|----------|--------|
+| `Cmd+1` | Switch to Instances |
+| `Cmd+2` | Switch to Snippets |
+| `Cmd+N` | Create new snippet |
+| `Cmd+R` | Refresh instances |
 
-# Run directly
-powershell -ExecutionPolicy Bypass -File claude-manager.ps1
+## Categories
 
-# Or use the batch file
-run-claude-manager.bat
-```
+| Category | Icon | Description |
+|----------|------|-------------|
+| Agent | 👤 | Autonomous task executors |
+| Skill | ⭐ | Specific capabilities |
+| Prompt | 💬 | Reusable prompts |
+| Template | 📄 | Document templates |
+| MCP | 🔌 | Model Context Protocol servers |
+| Instruction | 📋 | Project instructions (CLAUDE.md) |
 
-**Add to startup (optional):**
-Copy `run-claude-manager.bat` to `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`
+## Featured MCP Servers
 
-## Shell Aliases (Alternative)
+The Discover section includes setup guides for popular MCPs:
 
-For command-line users, add these to your `~/.zshrc` or `~/.bashrc`:
+- **GitHub** - Issues, PRs, code search
+- **PostgreSQL** - Database queries
+- **Slack** - Read and send messages
+- **Notion** - Pages and databases
+- **Figma** - Design automation
+- **Playwright** - Browser automation
+- **AWS** - Docs and billing
+- **Sentry** - Error tracking
 
-```bash
-# List all Claude instances
-alias cls='claude-list'
+## Folder Sync
 
-# Kill instance by index or PID
-alias ck='claude-kill'
+Auto-import markdown files as snippets:
 
-# Kill all instances
-alias cka='claude-kill all'
-
-# Quick status
-alias cst='claude-status'
-
-# Live monitoring
-alias cw='claude-watch'
-
-# Start new session
-alias cn='claude-new'
-
-# Focus on instance
-alias cf='claude-focus'
-```
-
-See the full shell functions in the [wiki](https://github.com/daniellauding/claude-manager/wiki).
-
-## Instance Types
-
-| Type | Description | How Detected |
-|------|-------------|--------------|
-| **happy** | Spawned by Happy daemon | Process ancestry includes `happy-coder` |
-| **terminal** | Started from terminal | Parent is `zsh` or `bash` |
-| **node** | Spawned by Node.js | Parent is `node` |
-| **unknown** | Other spawn method | Default fallback |
+1. Go to Snippets → Click folder icon
+2. Add a folder path (e.g., `~/prompts/`)
+3. All `.md` files become snippets
+4. Changes sync automatically
 
 ## Requirements
 
-### macOS
 - macOS 13.0 (Ventura) or later
-- Swift 5.9+
-- Claude CLI installed
+- Claude CLI installed (optional, for instance management)
 
-### Windows
-- Windows 10/11
-- PowerShell 5.1+
-- Claude CLI installed
+## Creating a Release
+
+```bash
+# Build and package
+./scripts/release.sh 1.2.0
+
+# Output:
+# - ClaudeManager.app (the app bundle)
+# - ClaudeManager-v1.2.0.zip (for distribution)
+# - SHA256 hash (for Homebrew formula)
+```
+
+## Setting Up Homebrew Tap
+
+1. Create repo: `github.com/YOUR_USERNAME/homebrew-tap`
+2. Copy `homebrew/claude-manager.rb` to `Casks/claude-manager.rb`
+3. Update version and SHA256 from release script output
+4. Users install with:
+   ```bash
+   brew tap YOUR_USERNAME/tap
+   brew install --cask claude-manager
+   ```
 
 ## Development
 
-### macOS
 ```bash
-# Debug build
+# Build
 swift build
-
-# Release build
-swift build -c release
 
 # Run
 swift run
 
-# Run tests (when available)
-swift test
+# Release build
+swift build -c release
+
+# Test (build + install + run)
+swift build -c release && pkill -f ClaudeManager; cp .build/release/ClaudeManager /Applications/ && open /Applications/ClaudeManager
 ```
-
-### Windows
-The Windows version is a single PowerShell script with no dependencies.
-
-## Roadmap
-
-- [ ] Linux support (GTK/Qt)
-- [ ] Auto-start on login option
-- [ ] Keyboard shortcuts
-- [ ] Instance grouping by project
-- [ ] Resource usage graphs
-- [ ] Notification when instance ends
-- [ ] Dark/light mode sync
-- [ ] Custom refresh interval
-- [ ] Export session logs
 
 ## Author
 
-**Daniel Lauding**
-[@daniellauding](https://github.com/daniellauding)
-
-## Contributing
-
-Contributions welcome! Please open an issue or PR.
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+**Daniel Lauding** - [@daniellauding](https://github.com/daniellauding)
 
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## Links
 
-- Inspired by [port-killer](https://github.com/productdevbook/port-killer)
-- Built for use with [Claude CLI](https://claude.ai)
-- Uses macOS system colors for native appearance
+- [GitHub](https://github.com/daniellauding/claude-manager)
+- [Issues](https://github.com/daniellauding/claude-manager/issues)
+- [Claude Code](https://claude.ai/claude-code)
+- [MCP Servers](https://github.com/punkpeye/awesome-mcp-servers)
