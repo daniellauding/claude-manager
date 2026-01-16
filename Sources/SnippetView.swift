@@ -178,46 +178,90 @@ struct SnippetView: View {
     }
 
     private var genericEmptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "books.vertical")
-                .font(.system(size: 40, weight: .ultraLight))
-                .foregroundColor(.cmTertiary.opacity(0.6))
-
+        VStack(spacing: 20) {
             VStack(spacing: 8) {
-                Text("Your Library is Empty")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(.cmSecondary)
+                Text("Welcome to Your Library")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.cmText)
 
                 Text("Save prompts, agents, hooks, and workflows")
                     .font(.system(size: 12))
                     .foregroundColor(.cmTertiary)
             }
 
-            VStack(spacing: 16) {
+            // Category Grid
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 12) {
+                ForEach(SnippetCategory.allCases.filter { $0 != .other }, id: \.self) { category in
+                    categoryGridButton(for: category)
+                }
+            }
+            .padding(.horizontal, 20)
+
+            Divider()
+                .padding(.horizontal, 40)
+
+            // Quick actions
+            HStack(spacing: 20) {
                 Button(action: { showingAddSheet = true }) {
-                    Text("Create New")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.cmBackground)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(Color.cmText)
-                        .cornerRadius(8)
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 14))
+                        Text("Create New")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.cmText)
+                }
+                .buttonStyle(.plain)
+
+                Button(action: { showingDiscover = true }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 14))
+                        Text("Discover")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.cmSecondary)
                 }
                 .buttonStyle(.plain)
 
                 Button(action: { showingFolderSettings = true }) {
                     HStack(spacing: 6) {
                         Image(systemName: "folder")
-                            .font(.system(size: 11))
-                        Text("Import from folder")
-                            .font(.system(size: 12))
+                            .font(.system(size: 14))
+                        Text("Import Folder")
+                            .font(.system(size: 12, weight: .medium))
                     }
+                    .foregroundColor(.cmSecondary)
                 }
-                .buttonStyle(.borderless)
-                .foregroundColor(.cmTertiary)
+                .buttonStyle(.plain)
             }
-            .padding(.top, 8)
         }
+        .padding(.vertical, 20)
+    }
+
+    private func categoryGridButton(for category: SnippetCategory) -> some View {
+        Button(action: {
+            manager.currentFilter = .category(category)
+        }) {
+            VStack(spacing: 8) {
+                Image(systemName: category.icon)
+                    .font(.system(size: 20, weight: .light))
+                    .foregroundColor(.cmText)
+
+                Text(category.displayName)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.cmSecondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(Color.cmBorder.opacity(0.15))
+            .cornerRadius(10)
+        }
+        .buttonStyle(.plain)
     }
 
     private var noResultsState: some View {

@@ -326,6 +326,90 @@ class SnippetManager: ObservableObject {
         return components.last
     }
 
+    // MARK: - Export / Import
+
+    func exportLibrary(to url: URL) -> Bool {
+        let exportData = LibraryExport(
+            version: "1.1.0",
+            exportDate: Date(),
+            snippets: snippets,
+            watchedFolders: watchedFolders
+        )
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+
+        guard let data = try? encoder.encode(exportData) else { return false }
+
+        do {
+            try data.write(to: url, options: .atomic)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    func importLibrary(from url: URL) -> Int {
+        guard let data = try? Data(contentsOf: url) else { return 0 }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        // Try new format first
+        if let importData = try? decoder.decode(LibraryExport.self, from: data) {
+            return mergeImport(importData.snippets)
+        }
+
+        // Try legacy format (just snippets array)
+        if let legacySnippets = try? decoder.decode([Snippet].self, from: data) {
+            return mergeImport(legacySnippets)
+        }
+
+        // Try SnippetStorage format
+        if let storage = try? decoder.decode(SnippetStorage.self, from: data) {
+            return mergeImport(storage.snippets)
+        }
+
+        return 0
+    }
+
+    private func mergeImport(_ importedSnippets: [Snippet]) -> Int {
+        var addedCount = 0
+        let existingTitles = Set(snippets.map { $0.title.lowercased() })
+
+        for snippet in importedSnippets {
+            // Skip duplicates by title
+            if existingTitles.contains(snippet.title.lowercased()) {
+                continue
+            }
+
+            // Create new snippet with fresh ID
+            let newSnippet = Snippet(
+                id: UUID(),
+                title: snippet.title,
+                content: snippet.content,
+                category: snippet.category,
+                tags: snippet.tags,
+                project: snippet.project,
+                isFavorite: snippet.isFavorite,
+                sourceFile: nil,  // Clear source file on import
+                createdAt: Date(),
+                lastUsedAt: nil,
+                useCount: 0
+            )
+
+            snippets.append(newSnippet)
+            addedCount += 1
+        }
+
+        if addedCount > 0 {
+            saveToDisk()
+        }
+
+        return addedCount
+    }
+
     // MARK: - Persistence
 
     private func loadFromDisk() {
@@ -350,4 +434,13 @@ class SnippetManager: ObservableObject {
         guard let data = try? JSONEncoder().encode(storage) else { return }
         try? data.write(to: storageURL, options: .atomic)
     }
+}
+
+// MARK: - Library Export Format
+
+struct LibraryExport: Codable {
+    let version: String
+    let exportDate: Date
+    let snippets: [Snippet]
+    let watchedFolders: [String]
 }

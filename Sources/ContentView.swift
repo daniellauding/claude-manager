@@ -30,30 +30,54 @@ struct ContentView: View {
     @State private var expandedInstances: Set<Int32> = []
     @State private var selectedTab: AppTab = .instances
 
+    // New UI states
+    @State private var showingSettings = false
+    @State private var showingWhatsNew = false
+    @State private var showingOnboarding = !UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
+
     init(manager: ClaudeProcessManager, snippetManager: SnippetManager) {
         self.manager = manager
         self.snippetManager = snippetManager
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Tab bar
-            tabBar
+        ZStack {
+            // Main content
+            VStack(spacing: 0) {
+                // Tab bar
+                tabBar
 
-            Divider()
+                Divider()
 
-            // Content based on selected tab
-            switch selectedTab {
-            case .instances:
-                instancesContent
-            case .snippets:
-                SnippetView(manager: snippetManager)
+                // Content based on selected tab
+                switch selectedTab {
+                case .instances:
+                    instancesContent
+                case .snippets:
+                    SnippetView(manager: snippetManager)
+                }
+
+                Divider()
+
+                // Footer
+                footerView
             }
 
-            Divider()
+            // Overlay views
+            if showingSettings {
+                SettingsView(snippetManager: snippetManager, isPresented: $showingSettings)
+                    .transition(.move(edge: .trailing))
+            }
 
-            // Footer
-            footerView
+            if showingWhatsNew {
+                WhatsNewView(isPresented: $showingWhatsNew)
+                    .transition(.move(edge: .trailing))
+            }
+
+            if showingOnboarding {
+                OnboardingView(isPresented: $showingOnboarding)
+                    .transition(.opacity)
+            }
         }
         .frame(minWidth: 520, maxWidth: 800, minHeight: 450, maxHeight: 900)
         .background(Color.cmBackground)
@@ -229,7 +253,8 @@ struct ContentView: View {
 
     // MARK: - Footer
     private var footerView: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
+            // Left side - context actions
             if selectedTab == .instances {
                 if !manager.instances.isEmpty {
                     Button(action: {
@@ -253,7 +278,7 @@ struct ContentView: View {
                     .foregroundColor(.cmSecondary)
                 }
             } else {
-                // Snippets tab footer
+                // Library tab footer
                 if !snippetManager.watchedFolders.isEmpty {
                     Text("\(snippetManager.watchedFolders.count) folder(s) watched")
                         .font(.system(size: 10))
@@ -263,6 +288,25 @@ struct ContentView: View {
 
             Spacer()
 
+            // What's New button
+            Button(action: { showingWhatsNew = true }) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 11))
+            }
+            .buttonStyle(.borderless)
+            .foregroundColor(.cmSecondary)
+            .help("What's New")
+
+            // Settings button
+            Button(action: { showingSettings = true }) {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 11))
+            }
+            .buttonStyle(.borderless)
+            .foregroundColor(.cmSecondary)
+            .help("Settings")
+
+            // Quit button
             Button(action: { NSApp.terminate(nil) }) {
                 Text("Quit")
                     .font(.system(size: 11, weight: .medium))
