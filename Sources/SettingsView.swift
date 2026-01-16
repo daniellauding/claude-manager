@@ -70,12 +70,100 @@ struct SettingsView: View {
 
                     // Reset Section
                     resetSection
+
+                    Divider().padding(.horizontal, 20)
+
+                    // AI Helper Beta
+                    aiHelperSection
                 }
                 .padding(.vertical, 20)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.cmBackground)
+        .sheet(isPresented: $showingAIHelper) {
+            AIHelperView(snippetManager: snippetManager, apiKeys: $apiKeys, isPresented: $showingAIHelper)
+        }
+    }
+
+    // MARK: - AI Helper State
+
+    @State private var showingAIHelper = false
+    @State private var apiKeys = APIKeys.load()
+
+    // MARK: - AI Helper Section
+
+    private var aiHelperSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("AI Helper")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.cmText)
+
+                Text("Beta")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundColor(.cmTertiary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.cmBorder.opacity(0.3))
+                    .cornerRadius(4)
+            }
+            .padding(.horizontal, 20)
+
+            VStack(spacing: 8) {
+                // API Keys config
+                apiKeyField(provider: "Anthropic", key: $apiKeys.anthropic, placeholder: "sk-ant-...")
+                apiKeyField(provider: "OpenAI", key: $apiKeys.openai, placeholder: "sk-...")
+                apiKeyField(provider: "Google", key: $apiKeys.google, placeholder: "AIza...")
+                apiKeyField(provider: "Ollama", key: $apiKeys.ollamaURL, placeholder: "http://localhost:11434")
+
+                // Launch AI Helper
+                Button(action: {
+                    apiKeys.save()
+                    showingAIHelper = true
+                }) {
+                    HStack {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 14))
+                        Text("Open AI Helper")
+                            .font(.system(size: 13))
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 10))
+                            .foregroundColor(.cmTertiary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.cmText.opacity(0.1))
+                    .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
+                .disabled(!apiKeys.hasAnyKey)
+            }
+            .padding(.horizontal, 20)
+
+            Text("Add your API keys to use AI to improve prompts. Keys stored locally.")
+                .font(.system(size: 11))
+                .foregroundColor(.cmTertiary)
+                .padding(.horizontal, 20)
+        }
+    }
+
+    private func apiKeyField(provider: String, key: Binding<String>, placeholder: String) -> some View {
+        HStack(spacing: 12) {
+            Text(provider)
+                .font(.system(size: 12))
+                .foregroundColor(.cmSecondary)
+                .frame(width: 70, alignment: .leading)
+
+            SecureField(placeholder, text: key)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(size: 11))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color.cmBorder.opacity(0.1))
+        .cornerRadius(8)
     }
 
     // MARK: - Reset Section
@@ -625,5 +713,453 @@ struct WhatsNewView: View {
             return .cmSecondary
         }
         return .cmTertiary
+    }
+}
+
+// MARK: - API Keys Storage
+
+struct APIKeys: Codable {
+    var anthropic: String = ""
+    var openai: String = ""
+    var google: String = ""
+    var ollamaURL: String = ""
+
+    var hasAnyKey: Bool {
+        !anthropic.isEmpty || !openai.isEmpty || !google.isEmpty || !ollamaURL.isEmpty
+    }
+
+    var preferredProvider: String? {
+        if !anthropic.isEmpty { return "anthropic" }
+        if !openai.isEmpty { return "openai" }
+        if !google.isEmpty { return "google" }
+        if !ollamaURL.isEmpty { return "ollama" }
+        return nil
+    }
+
+    static func load() -> APIKeys {
+        guard let data = UserDefaults.standard.data(forKey: "apiKeys"),
+              let keys = try? JSONDecoder().decode(APIKeys.self, from: data) else {
+            return APIKeys()
+        }
+        return keys
+    }
+
+    func save() {
+        if let data = try? JSONEncoder().encode(self) {
+            UserDefaults.standard.set(data, forKey: "apiKeys")
+        }
+    }
+}
+
+// MARK: - AI Helper View
+
+struct AIHelperView: View {
+    @ObservedObject var snippetManager: SnippetManager
+    @Binding var apiKeys: APIKeys
+    @Binding var isPresented: Bool
+
+    @State private var inputText: String = ""
+    @State private var outputText: String = ""
+    @State private var isLoading: Bool = false
+    @State private var selectedAction: AIAction = .improve
+    @State private var errorMessage: String?
+    @State private var savedMessage: String?
+
+    enum AIAction: String, CaseIterable {
+        case improve = "Improve"
+        case expand = "Expand"
+        case simplify = "Simplify"
+        case convertToAgent = "Convert to Agent"
+        case addExamples = "Add Examples"
+
+        var prompt: String {
+            switch self {
+            case .improve:
+                return "Improve this prompt to be clearer, more specific, and more effective. Keep the same intent but make it better:"
+            case .expand:
+                return "Expand this prompt with more detail, context, and instructions while keeping the core intent:"
+            case .simplify:
+                return "Simplify this prompt to be more concise and direct while preserving the key requirements:"
+            case .convertToAgent:
+                return "Convert this into a well-structured agent prompt that defines a persona, expertise, and behavior patterns:"
+            case .addExamples:
+                return "Add 2-3 concrete examples to this prompt to better illustrate the expected output format:"
+            }
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Button(action: { isPresented = false }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 11))
+                        Text("Back")
+                            .font(.system(size: 12))
+                    }
+                    .foregroundColor(.cmSecondary)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 12))
+                    Text("AI Helper")
+                        .font(.system(size: 13, weight: .medium))
+                    Text("Beta")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(.cmTertiary)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(Color.cmBorder.opacity(0.3))
+                        .cornerRadius(3)
+                }
+
+                Spacer()
+
+                if let provider = apiKeys.preferredProvider {
+                    Text("Using \(provider.capitalized)")
+                        .font(.system(size: 10))
+                        .foregroundColor(.cmTertiary)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+
+            Divider()
+
+            // Action selector
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(AIAction.allCases, id: \.self) { action in
+                        Button(action: { selectedAction = action }) {
+                            Text(action.rawValue)
+                                .font(.system(size: 11, weight: selectedAction == action ? .medium : .regular))
+                                .foregroundColor(selectedAction == action ? .cmText : .cmSecondary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(selectedAction == action ? Color.cmBorder.opacity(0.3) : Color.clear)
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+            }
+
+            Divider()
+
+            // Content area
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Input
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Your Prompt")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.cmSecondary)
+
+                        TextEditor(text: $inputText)
+                            .font(.system(size: 12, design: .monospaced))
+                            .frame(minHeight: 100)
+                            .padding(8)
+                            .background(Color.cmBorder.opacity(0.1))
+                            .cornerRadius(8)
+                    }
+
+                    // Process button
+                    Button(action: processPrompt) {
+                        HStack {
+                            if isLoading {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                            } else {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 12))
+                            }
+                            Text(isLoading ? "Processing..." : selectedAction.rawValue)
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundColor(.cmBackground)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(inputText.isEmpty || isLoading ? Color.cmTertiary : Color.cmText)
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(inputText.isEmpty || isLoading)
+
+                    // Error message
+                    if let error = errorMessage {
+                        Text(error)
+                            .font(.system(size: 11))
+                            .foregroundColor(.cmSecondary)
+                            .padding(12)
+                            .background(Color.cmBorder.opacity(0.1))
+                            .cornerRadius(8)
+                    }
+
+                    // Output
+                    if !outputText.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Result")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(.cmSecondary)
+
+                                Spacer()
+
+                                // Copy button
+                                Button(action: copyOutput) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "doc.on.doc")
+                                            .font(.system(size: 10))
+                                        Text("Copy")
+                                            .font(.system(size: 10))
+                                    }
+                                    .foregroundColor(.cmSecondary)
+                                }
+                                .buttonStyle(.plain)
+
+                                // Save to library
+                                Button(action: saveToLibrary) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "plus.circle")
+                                            .font(.system(size: 10))
+                                        Text("Save to Library")
+                                            .font(.system(size: 10))
+                                    }
+                                    .foregroundColor(.cmSecondary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            Text(outputText)
+                                .font(.system(size: 12, design: .monospaced))
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(12)
+                                .background(Color.cmBorder.opacity(0.15))
+                                .cornerRadius(8)
+
+                            // Saved message
+                            if let saved = savedMessage {
+                                HStack {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 10))
+                                    Text(saved)
+                                        .font(.system(size: 10))
+                                }
+                                .foregroundColor(.cmText)
+                            }
+                        }
+                    }
+                }
+                .padding(20)
+            }
+        }
+        .frame(width: 500, height: 600)
+        .background(Color.cmBackground)
+    }
+
+    // MARK: - Actions
+
+    private func copyOutput() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(outputText, forType: .string)
+    }
+
+    private func saveToLibrary() {
+        let snippet = Snippet(
+            title: "AI Generated: \(selectedAction.rawValue)",
+            content: outputText,
+            category: selectedAction == .convertToAgent ? .agent : .prompt,
+            tags: ["ai-generated"],
+            project: nil,
+            isFavorite: false
+        )
+        snippetManager.addSnippet(snippet)
+        savedMessage = "Saved to Library"
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            savedMessage = nil
+        }
+    }
+
+    private func processPrompt() {
+        guard !inputText.isEmpty else { return }
+
+        isLoading = true
+        errorMessage = nil
+        outputText = ""
+
+        let fullPrompt = "\(selectedAction.prompt)\n\n\(inputText)"
+
+        // Try providers in order of preference
+        if !apiKeys.anthropic.isEmpty {
+            callAnthropic(prompt: fullPrompt)
+        } else if !apiKeys.openai.isEmpty {
+            callOpenAI(prompt: fullPrompt)
+        } else if !apiKeys.google.isEmpty {
+            callGoogle(prompt: fullPrompt)
+        } else if !apiKeys.ollamaURL.isEmpty {
+            callOllama(prompt: fullPrompt)
+        } else {
+            isLoading = false
+            errorMessage = "No API key configured"
+        }
+    }
+
+    // MARK: - API Calls
+
+    private func callAnthropic(prompt: String) {
+        guard let url = URL(string: "https://api.anthropic.com/v1/messages") else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(apiKeys.anthropic, forHTTPHeaderField: "x-api-key")
+        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+
+        let body: [String: Any] = [
+            "model": "claude-3-haiku-20240307",
+            "max_tokens": 2048,
+            "messages": [
+                ["role": "user", "content": prompt]
+            ]
+        ]
+
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                isLoading = false
+                if let error = error {
+                    errorMessage = "Error: \(error.localizedDescription)"
+                    return
+                }
+                guard let data = data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let content = json["content"] as? [[String: Any]],
+                      let first = content.first,
+                      let text = first["text"] as? String else {
+                    errorMessage = "Failed to parse response"
+                    return
+                }
+                outputText = text
+            }
+        }.resume()
+    }
+
+    private func callOpenAI(prompt: String) {
+        guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(apiKeys.openai)", forHTTPHeaderField: "Authorization")
+
+        let body: [String: Any] = [
+            "model": "gpt-4o-mini",
+            "messages": [
+                ["role": "user", "content": prompt]
+            ]
+        ]
+
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                isLoading = false
+                if let error = error {
+                    errorMessage = "Error: \(error.localizedDescription)"
+                    return
+                }
+                guard let data = data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let choices = json["choices"] as? [[String: Any]],
+                      let first = choices.first,
+                      let message = first["message"] as? [String: Any],
+                      let text = message["content"] as? String else {
+                    errorMessage = "Failed to parse response"
+                    return
+                }
+                outputText = text
+            }
+        }.resume()
+    }
+
+    private func callGoogle(prompt: String) {
+        guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=\(apiKeys.google)") else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = [
+            "contents": [
+                ["parts": [["text": prompt]]]
+            ]
+        ]
+
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                isLoading = false
+                if let error = error {
+                    errorMessage = "Error: \(error.localizedDescription)"
+                    return
+                }
+                guard let data = data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let candidates = json["candidates"] as? [[String: Any]],
+                      let first = candidates.first,
+                      let content = first["content"] as? [String: Any],
+                      let parts = content["parts"] as? [[String: Any]],
+                      let firstPart = parts.first,
+                      let text = firstPart["text"] as? String else {
+                    errorMessage = "Failed to parse response"
+                    return
+                }
+                outputText = text
+            }
+        }.resume()
+    }
+
+    private func callOllama(prompt: String) {
+        guard let url = URL(string: "\(apiKeys.ollamaURL)/api/generate") else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = [
+            "model": "llama3.2",
+            "prompt": prompt,
+            "stream": false
+        ]
+
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                isLoading = false
+                if let error = error {
+                    errorMessage = "Error: \(error.localizedDescription)"
+                    return
+                }
+                guard let data = data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let text = json["response"] as? String else {
+                    errorMessage = "Failed to parse response. Make sure Ollama is running."
+                    return
+                }
+                outputText = text
+            }
+        }.resume()
     }
 }

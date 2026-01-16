@@ -35,7 +35,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Create popover with shared managers
         popover = NSPopover()
         popover.contentSize = NSSize(width: 520, height: 550)
-        popover.behavior = .transient
+        popover.behavior = .applicationDefined  // Don't close when clicking outside
         popover.contentViewController = NSHostingController(
             rootView: ContentView(manager: processManager, snippetManager: snippetManager)
         )

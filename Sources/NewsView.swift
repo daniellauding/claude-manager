@@ -11,7 +11,12 @@ struct NewsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Filter bar
+            // Sticky header with sources button
+            headerBar
+
+            Divider()
+
+            // Scrollable filter chips
             filterBar
 
             Divider()
@@ -39,53 +44,70 @@ struct NewsView: View {
         }
     }
 
+    // MARK: - Header Bar (Sticky)
+
+    private var headerBar: some View {
+        HStack(spacing: 12) {
+            Text("News")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.cmText)
+
+            Spacer()
+
+            // Refresh button
+            Button(action: { manager.refresh() }) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 12))
+                    .rotationEffect(.degrees(manager.isLoading ? 360 : 0))
+                    .animation(manager.isLoading ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: manager.isLoading)
+            }
+            .buttonStyle(.borderless)
+            .foregroundColor(.cmSecondary)
+            .help("Refresh feeds")
+
+            // Sources button (sticky/always visible)
+            Button(action: { showingSourceEditor = true }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 12))
+                    Text("Sources")
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .foregroundColor(.cmSecondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Color.cmBorder.opacity(0.2))
+                .cornerRadius(6)
+            }
+            .buttonStyle(.plain)
+            .help("Manage news sources")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+
     // MARK: - Filter Bar
 
     private var filterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                // Refresh button
-                Button(action: { manager.refresh() }) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 11))
-                        .rotationEffect(.degrees(manager.isLoading ? 360 : 0))
-                        .animation(manager.isLoading ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: manager.isLoading)
-                }
-                .buttonStyle(.borderless)
-                .foregroundColor(.cmSecondary)
-
-                Divider()
-                    .frame(height: 16)
-
                 // Filter chips
                 filterChip(for: .all, count: manager.items.count)
                 filterChip(for: .starred, count: manager.starredItems.count)
                 filterChip(for: .unread, count: manager.items.filter { !$0.isRead }.count)
 
-                Divider()
-                    .frame(height: 16)
+                if !manager.sources.filter({ $0.isEnabled }).isEmpty {
+                    Divider()
+                        .frame(height: 16)
 
-                // Source filters
-                ForEach(manager.sources.filter { $0.isEnabled }) { source in
-                    filterChip(for: .source(source.name), count: manager.items.filter { $0.source == source.name }.count)
-                }
-
-                Spacer()
-
-                // Manage sources button
-                Button(action: { showingSourceEditor = true }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 10))
-                        Text("Sources")
-                            .font(.system(size: 11))
+                    // Source filters
+                    ForEach(manager.sources.filter { $0.isEnabled }) { source in
+                        filterChip(for: .source(source.name), count: manager.items.filter { $0.source == source.name }.count)
                     }
-                    .foregroundColor(.cmSecondary)
                 }
-                .buttonStyle(.borderless)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
         }
     }
 
@@ -308,6 +330,11 @@ struct SourceEditorSheet: View {
     @State private var showingAddSource = false
     @State private var newSourceName = ""
     @State private var newSourceURL = ""
+    @State private var sourceToEdit: NewsSource?
+    @State private var editName = ""
+    @State private var editURL = ""
+    @State private var showingDeleteConfirm = false
+    @State private var sourceToDelete: NewsSource?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -330,20 +357,81 @@ struct SourceEditorSheet: View {
             Divider()
 
             // Source list
-            ScrollView {
-                LazyVStack(spacing: 1) {
-                    ForEach(manager.sources) { source in
-                        sourceRow(source)
+            if manager.sources.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "newspaper")
+                        .font(.system(size: 28, weight: .light))
+                        .foregroundColor(.cmTertiary)
+                    Text("No news sources")
+                        .font(.system(size: 12))
+                        .foregroundColor(.cmSecondary)
+                    Text("Add RSS feeds to see news")
+                        .font(.system(size: 11))
+                        .foregroundColor(.cmTertiary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 1) {
+                        ForEach(manager.sources) { source in
+                            sourceRow(source)
+                        }
                     }
                 }
             }
 
             Divider()
 
-            // Add source section
-            if showingAddSource {
+            // Edit source section
+            if let source = sourceToEdit {
                 VStack(spacing: 12) {
-                    TextField("Source Name", text: $newSourceName)
+                    Text("Edit Source")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.cmSecondary)
+
+                    TextField("Name", text: $editName)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 12))
+
+                    TextField("RSS Feed URL", text: $editURL)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 12))
+
+                    HStack {
+                        Button("Cancel") {
+                            sourceToEdit = nil
+                            editName = ""
+                            editURL = ""
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundColor(.cmSecondary)
+
+                        Spacer()
+
+                        Button("Save") {
+                            var updated = source
+                            updated.name = editName
+                            updated.feedURL = editURL
+                            manager.updateSource(updated)
+                            sourceToEdit = nil
+                            editName = ""
+                            editURL = ""
+                            manager.refresh()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(editName.isEmpty || editURL.isEmpty)
+                    }
+                }
+                .padding()
+            }
+            // Add source section
+            else if showingAddSource {
+                VStack(spacing: 12) {
+                    Text("Add Source")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.cmSecondary)
+
+                    TextField("Name", text: $newSourceName)
                         .textFieldStyle(.roundedBorder)
                         .font(.system(size: 12))
 
@@ -389,6 +477,18 @@ struct SourceEditorSheet: View {
 
                     Spacer()
 
+                    if !manager.sources.isEmpty {
+                        Button(action: {
+                            showingDeleteConfirm = true
+                            sourceToDelete = nil // nil means delete all
+                        }) {
+                            Text("Clear All")
+                                .font(.system(size: 11))
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundColor(.cmTertiary)
+                    }
+
                     Button(action: { manager.resetToDefaults() }) {
                         Text("Reset to Defaults")
                             .font(.system(size: 11))
@@ -401,6 +501,25 @@ struct SourceEditorSheet: View {
         }
         .frame(width: 400, height: 450)
         .background(Color.cmBackground)
+        .alert("Delete Source?", isPresented: $showingDeleteConfirm) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                if let source = sourceToDelete {
+                    manager.deleteSource(source)
+                } else {
+                    // Clear all sources
+                    for source in manager.sources {
+                        manager.deleteSource(source)
+                    }
+                }
+            }
+        } message: {
+            if sourceToDelete != nil {
+                Text("Remove this news source?")
+            } else {
+                Text("Remove all news sources?")
+            }
+        }
     }
 
     private func sourceRow(_ source: NewsSource) -> some View {
@@ -412,12 +531,6 @@ struct SourceEditorSheet: View {
                     .foregroundColor(source.isEnabled ? .cmText : .cmTertiary)
             }
             .buttonStyle(.plain)
-
-            // Icon
-            Image(systemName: source.icon)
-                .font(.system(size: 14))
-                .foregroundColor(.cmSecondary)
-                .frame(width: 20)
 
             // Name
             VStack(alignment: .leading, spacing: 2) {
@@ -433,15 +546,28 @@ struct SourceEditorSheet: View {
 
             Spacer()
 
-            // Delete (only for custom sources)
-            if !NewsSource.defaults.contains(where: { $0.feedURL == source.feedURL }) {
-                Button(action: { manager.deleteSource(source) }) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 12))
-                        .foregroundColor(.cmSecondary.opacity(0.7))
-                }
-                .buttonStyle(.plain)
+            // Edit
+            Button(action: {
+                sourceToEdit = source
+                editName = source.name
+                editURL = source.feedURL
+            }) {
+                Image(systemName: "pencil")
+                    .font(.system(size: 11))
+                    .foregroundColor(.cmTertiary)
             }
+            .buttonStyle(.plain)
+
+            // Delete
+            Button(action: {
+                sourceToDelete = source
+                showingDeleteConfirm = true
+            }) {
+                Image(systemName: "trash")
+                    .font(.system(size: 11))
+                    .foregroundColor(.cmTertiary)
+            }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

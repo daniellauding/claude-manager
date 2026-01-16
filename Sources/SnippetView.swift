@@ -7,6 +7,7 @@ struct SnippetView: View {
     @State private var showingAddSheet = false
     @State private var showingFolderSettings = false
     @State private var showingDiscover = false
+    @State private var showingSkillBuilder = false
     @State private var snippetToEdit: Snippet?
     @State private var showingDeleteConfirmation = false
     @State private var snippetToDelete: Snippet?
@@ -46,6 +47,9 @@ struct SnippetView: View {
         }
         .sheet(isPresented: $showingFolderSettings) {
             FolderSettingsView(manager: manager)
+        }
+        .sheet(isPresented: $showingSkillBuilder) {
+            SkillBuilderView(snippetManager: manager, isPresented: $showingSkillBuilder)
         }
         .alert("Delete Snippet?", isPresented: $showingDeleteConfirmation, presenting: snippetToDelete) { snippet in
             Button("Cancel", role: .cancel) {}
@@ -87,6 +91,23 @@ struct SnippetView: View {
             Spacer()
 
             HStack(spacing: 12) {
+                // Skill Builder - prominent button
+                Button(action: { showingSkillBuilder = true }) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 11))
+                        Text("Build")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.cmBackground)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.cmText)
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .help("Build a new skill with guided wizard")
+
                 Button(action: { showingDiscover = true }) {
                     HStack(spacing: 5) {
                         Image(systemName: "sparkles")
@@ -448,6 +469,7 @@ struct SnippetRow: View {
 
     @State private var isHovering = false
     @State private var showCopiedFeedback = false
+    @State private var showShareMenu = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -554,6 +576,24 @@ struct SnippetRow: View {
                 }
                 .buttonStyle(.plain)
 
+                // Share menu
+                Menu {
+                    Button(action: copyAsMarkdown) {
+                        Label("Copy as Markdown", systemImage: "doc.text")
+                    }
+                    Button(action: exportSnippet) {
+                        Label("Export as .cmlib", systemImage: "square.and.arrow.up")
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "square.and.arrow.up")
+                        Text("Share")
+                    }
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.cmSecondary)
+                }
+                .menuStyle(.borderlessButton)
+
                 if !snippet.isSynced {
                     Button(action: onEdit) {
                         HStack(spacing: 5) {
@@ -584,6 +624,45 @@ struct SnippetRow: View {
             .padding(.bottom, 8)
         }
         .padding(.top, 4)
+    }
+
+    // MARK: - Share Functions
+
+    private func copyAsMarkdown() {
+        let markdown = """
+        # \(snippet.title)
+
+        **Category:** \(snippet.category.displayName)
+        \(snippet.tags.isEmpty ? "" : "**Tags:** \(snippet.tags.joined(separator: ", "))")
+
+        ```
+        \(snippet.content)
+        ```
+
+        ---
+        *Exported from Claude Manager*
+        """
+
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(markdown, forType: .string)
+    }
+
+    private func exportSnippet() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = "\(snippet.title.replacingOccurrences(of: " ", with: "-").lowercased()).cmlib"
+        panel.title = "Export Snippet"
+
+        panel.begin { response in
+            if response == .OK, let url = panel.url {
+                do {
+                    let data = try JSONEncoder().encode([snippet])
+                    try data.write(to: url)
+                } catch {
+                    print("Export error: \(error)")
+                }
+            }
+        }
     }
 }
 

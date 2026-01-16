@@ -24,6 +24,9 @@ struct DashboardView: View {
                 // Recent Library Items
                 recentLibrarySection
 
+                // Latest News
+                latestNewsSection
+
                 // Footer
                 footerLinksSection
             }
@@ -267,6 +270,120 @@ struct DashboardView: View {
                 Spacer()
 
                 Image(systemName: "doc.on.doc")
+                    .font(.system(size: 9))
+                    .foregroundColor(.cmTertiary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Latest News
+
+    private var latestNewsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Latest News")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.cmText)
+
+                Spacer()
+
+                Button(action: { onNavigate(.news) }) {
+                    Text("See All")
+                        .font(.system(size: 11))
+                        .foregroundColor(.cmSecondary)
+                }
+                .buttonStyle(.plain)
+            }
+
+            if newsManager.items.isEmpty {
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "newspaper")
+                            .font(.system(size: 20, weight: .light))
+                            .foregroundColor(.cmTertiary)
+
+                        if newsManager.isLoading {
+                            Text("Loading news...")
+                                .font(.system(size: 11))
+                                .foregroundColor(.cmTertiary)
+                        } else if newsManager.sources.filter({ $0.isEnabled }).isEmpty {
+                            Text("No feeds configured")
+                                .font(.system(size: 11))
+                                .foregroundColor(.cmTertiary)
+                            Button(action: { onNavigate(.news) }) {
+                                Text("Add News Sources")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(.cmText)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            Text("No news yet")
+                                .font(.system(size: 11))
+                                .foregroundColor(.cmTertiary)
+                            Button(action: { newsManager.refresh() }) {
+                                Text("Refresh")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(.cmText)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.vertical, 20)
+                    Spacer()
+                }
+                .background(Color.cmBorder.opacity(0.05))
+                .cornerRadius(10)
+            } else {
+                let recentNews = newsManager.items
+                    .sorted { ($0.pubDate ?? .distantPast) > ($1.pubDate ?? .distantPast) }
+                    .prefix(3)
+
+                VStack(spacing: 1) {
+                    ForEach(Array(recentNews)) { item in
+                        newsPreviewRow(item)
+                    }
+                }
+                .background(Color.cmBorder.opacity(0.05))
+                .cornerRadius(10)
+            }
+        }
+    }
+
+    private func newsPreviewRow(_ item: NewsItem) -> some View {
+        Button(action: {
+            newsManager.openInBrowser(item)
+        }) {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.title)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.cmText)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+
+                    HStack(spacing: 6) {
+                        Text(item.source)
+                            .font(.system(size: 9))
+                            .foregroundColor(.cmTertiary)
+
+                        if !item.pubDateFormatted.isEmpty {
+                            Text("·")
+                                .font(.system(size: 9))
+                                .foregroundColor(.cmTertiary)
+                            Text(item.pubDateFormatted)
+                                .font(.system(size: 9))
+                                .foregroundColor(.cmTertiary)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                Image(systemName: "arrow.up.right")
                     .font(.system(size: 9))
                     .foregroundColor(.cmTertiary)
             }
