@@ -11,15 +11,26 @@ extension Color {
 }
 
 enum AppTab: String, CaseIterable {
+    case home = "Home"
     case instances = "Instances"
     case snippets = "Library"
     case news = "News"
 
     var icon: String {
         switch self {
+        case .home: return "house"
         case .instances: return "terminal"
         case .snippets: return "books.vertical"
         case .news: return "newspaper"
+        }
+    }
+
+    var keyboardShortcut: String {
+        switch self {
+        case .home: return "0"
+        case .instances: return "1"
+        case .snippets: return "2"
+        case .news: return "3"
         }
     }
 }
@@ -31,7 +42,15 @@ struct ContentView: View {
     @State private var showingKillConfirmation = false
     @State private var instanceToKill: ClaudeInstance?
     @State private var expandedInstances: Set<Int32> = []
-    @State private var selectedTab: AppTab = .instances
+
+    // Remember last tab
+    @State private var selectedTab: AppTab = {
+        if let saved = UserDefaults.standard.string(forKey: "lastTab"),
+           let tab = AppTab(rawValue: saved) {
+            return tab
+        }
+        return .home
+    }()
 
     // New UI states
     @State private var showingSettings = false
@@ -55,6 +74,16 @@ struct ContentView: View {
 
                 // Content based on selected tab
                 switch selectedTab {
+                case .home:
+                    DashboardView(
+                        processManager: manager,
+                        snippetManager: snippetManager,
+                        newsManager: newsManager,
+                        onNavigate: { tab in
+                            selectedTab = tab
+                            UserDefaults.standard.set(tab.rawValue, forKey: "lastTab")
+                        }
+                    )
                 case .instances:
                     instancesContent
                 case .snippets:
@@ -139,7 +168,10 @@ struct ContentView: View {
                     .background(selectedTab == tab ? Color.cmBorder.opacity(0.3) : Color.clear)
                 }
                 .buttonStyle(.plain)
-                .keyboardShortcut(tab == .instances ? "1" : (tab == .snippets ? "2" : "3"), modifiers: .command)
+                .keyboardShortcut(KeyEquivalent(Character(tab.keyboardShortcut)), modifiers: .command)
+                .onChange(of: selectedTab) { newTab in
+                    UserDefaults.standard.set(newTab.rawValue, forKey: "lastTab")
+                }
             }
 
             Spacer()

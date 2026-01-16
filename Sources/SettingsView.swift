@@ -65,12 +65,81 @@ struct SettingsView: View {
 
                     // Links Section
                     linksSection
+
+                    Divider().padding(.horizontal, 20)
+
+                    // Reset Section
+                    resetSection
                 }
                 .padding(.vertical, 20)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.cmBackground)
+    }
+
+    // MARK: - Reset Section
+
+    @State private var showingResetConfirmation = false
+
+    private var resetSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Reset")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.cmText)
+                .padding(.horizontal, 20)
+
+            VStack(spacing: 8) {
+                Button(action: { showingResetConfirmation = true }) {
+                    HStack {
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 14))
+                            .foregroundColor(.red)
+                        Text("Reset All Settings")
+                            .font(.system(size: 13))
+                            .foregroundColor(.red)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.red.opacity(0.1))
+                    .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
+                .alert("Reset All Settings?", isPresented: $showingResetConfirmation) {
+                    Button("Cancel", role: .cancel) {}
+                    Button("Reset", role: .destructive) {
+                        resetAllSettings()
+                    }
+                } message: {
+                    Text("This will clear your library, news sources, and preferences. This cannot be undone.")
+                }
+            }
+            .padding(.horizontal, 20)
+
+            Text("Clears library, news settings, and preferences.")
+                .font(.system(size: 11))
+                .foregroundColor(.cmTertiary)
+                .padding(.horizontal, 20)
+        }
+    }
+
+    private func resetAllSettings() {
+        // Clear UserDefaults
+        let domain = Bundle.main.bundleIdentifier ?? "com.daniellauding.claude-manager"
+        UserDefaults.standard.removePersistentDomain(forName: domain)
+
+        // Clear data files
+        let claudeDir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude")
+        try? FileManager.default.removeItem(at: claudeDir.appendingPathComponent("snippets.json"))
+        try? FileManager.default.removeItem(at: claudeDir.appendingPathComponent("news.json"))
+
+        // Reset managers
+        snippetManager.snippets.removeAll()
+        snippetManager.watchedFolders.removeAll()
+
+        // Close settings
+        isPresented = false
     }
 
     // MARK: - About Section
