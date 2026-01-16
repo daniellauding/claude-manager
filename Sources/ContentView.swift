@@ -13,11 +13,13 @@ extension Color {
 enum AppTab: String, CaseIterable {
     case instances = "Instances"
     case snippets = "Library"
+    case news = "News"
 
     var icon: String {
         switch self {
         case .instances: return "terminal"
         case .snippets: return "books.vertical"
+        case .news: return "newspaper"
         }
     }
 }
@@ -25,6 +27,7 @@ enum AppTab: String, CaseIterable {
 struct ContentView: View {
     @ObservedObject var manager: ClaudeProcessManager
     @ObservedObject var snippetManager: SnippetManager
+    @StateObject private var newsManager = NewsManager()
     @State private var showingKillConfirmation = false
     @State private var instanceToKill: ClaudeInstance?
     @State private var expandedInstances: Set<Int32> = []
@@ -33,7 +36,8 @@ struct ContentView: View {
     // New UI states
     @State private var showingSettings = false
     @State private var showingWhatsNew = false
-    @State private var showingOnboarding = !UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
+    // Onboarding disabled for now
+    @State private var showingOnboarding = false // !UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
 
     init(manager: ClaudeProcessManager, snippetManager: SnippetManager) {
         self.manager = manager
@@ -55,6 +59,8 @@ struct ContentView: View {
                     instancesContent
                 case .snippets:
                     SnippetView(manager: snippetManager)
+                case .news:
+                    NewsView(manager: newsManager)
                 }
 
                 Divider()
@@ -133,7 +139,7 @@ struct ContentView: View {
                     .background(selectedTab == tab ? Color.cmBorder.opacity(0.3) : Color.clear)
                 }
                 .buttonStyle(.plain)
-                .keyboardShortcut(tab == .instances ? "1" : "2", modifiers: .command)
+                .keyboardShortcut(tab == .instances ? "1" : (tab == .snippets ? "2" : "3"), modifiers: .command)
             }
 
             Spacer()
@@ -499,16 +505,8 @@ struct InstanceRow: View {
 
                     // Actions row
                     HStack(spacing: 12) {
-                        Button(action: { onFocus(instance) }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "arrow.up.forward.app")
-                                    .font(.system(size: 10))
-                                Text("Focus Terminal")
-                                    .font(.system(size: 10, weight: .medium))
-                            }
-                        }
-                        .buttonStyle(.borderless)
-                        .foregroundColor(.cmSecondary)
+                        // Focus Terminal disabled - needs terminal integration
+                        // Button(action: { onFocus(instance) }) { ... }
 
                         Button(action: { copyLaunchCommand() }) {
                             HStack(spacing: 4) {
