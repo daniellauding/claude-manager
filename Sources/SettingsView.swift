@@ -4,8 +4,8 @@ import AppKit
 // MARK: - App Info
 
 struct AppInfo {
-    static let version = "1.1.0"
-    static let build = "2"
+    static let version = "1.4.0"
+    static let build = "1"
     static let author = "Daniel Lauding"
     static let email = "daniel@lauding.se"
     static let website = "https://www.daniellauding.se"
@@ -822,6 +822,20 @@ struct WhatsNewView: View {
     @Binding var isPresented: Bool
 
     private let updates: [(version: String, date: String, items: [String])] = [
+        (
+            "1.4.0",
+            "January 2025",
+            [
+                "New: Teams - create and manage teams with members",
+                "New: Magic link invitations with expiration limits",
+                "New: Privacy levels - Private, Team, Public snippets",
+                "New: Cross-device sync with email login (optional)",
+                "New: Invitations tab to view and respond to invites",
+                "New: Projects to organize team snippets",
+                "Added: Leave team and delete team functionality",
+                "Added: URL scheme for magic link handling"
+            ]
+        ),
         (
             "1.1.0",
             "January 2025",
