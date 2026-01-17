@@ -8,8 +8,8 @@
 #    brew install --cask claude-manager
 
 cask "claude-manager" do
-  version "1.1.0"
-  sha256 "UPDATE_WITH_SHA256_FROM_RELEASE_SCRIPT"
+  version "1.2.0"
+  sha256 "57c929b6acff0a47db2a7b4b0b8eeee943707f82c44476fef5dd7c7d78b2b829"
 
   url "https://github.com/daniellauding/claude-manager/releases/download/v#{version}/ClaudeManager-v#{version}.zip"
   name "Claude Manager"
