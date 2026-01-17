@@ -51,27 +51,42 @@ struct TeamListView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
 
-            // Segmented control
-            Picker("", selection: $selectedSegment) {
-                HStack {
-                    Text("My Teams")
-                    if !teamManager.teams.isEmpty {
-                        Text("(\(teamManager.teams.count))")
-                            .foregroundColor(.cmTertiary)
+            // Custom segmented control (monochrome)
+            HStack(spacing: 0) {
+                Button(action: { selectedSegment = 0 }) {
+                    HStack(spacing: 4) {
+                        Text("My Teams")
+                        if !teamManager.teams.isEmpty {
+                            Text("(\(teamManager.teams.count))")
+                                .foregroundColor(.cmTertiary)
+                        }
                     }
+                    .font(.system(size: 12, weight: selectedSegment == 0 ? .semibold : .regular))
+                    .foregroundColor(selectedSegment == 0 ? .cmText : .cmSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(selectedSegment == 0 ? Color.cmBorder.opacity(0.3) : Color.clear)
                 }
-                .tag(0)
+                .buttonStyle(.plain)
 
-                HStack {
-                    Text("Invitations")
-                    if !teamManager.receivedInvitations.isEmpty {
-                        Text("(\(teamManager.receivedInvitations.count))")
-                            .foregroundColor(.orange)
+                Button(action: { selectedSegment = 1 }) {
+                    HStack(spacing: 4) {
+                        Text("Invitations")
+                        if !teamManager.receivedInvitations.isEmpty {
+                            Text("(\(teamManager.receivedInvitations.count))")
+                                .foregroundColor(.cmTertiary)
+                        }
                     }
+                    .font(.system(size: 12, weight: selectedSegment == 1 ? .semibold : .regular))
+                    .foregroundColor(selectedSegment == 1 ? .cmText : .cmSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(selectedSegment == 1 ? Color.cmBorder.opacity(0.3) : Color.clear)
                 }
-                .tag(1)
+                .buttonStyle(.plain)
             }
-            .pickerStyle(.segmented)
+            .background(Color.cmBorder.opacity(0.15))
+            .cornerRadius(8)
             .padding(.horizontal, 16)
             .padding(.bottom, 8)
 

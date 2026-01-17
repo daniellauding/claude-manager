@@ -1,6 +1,32 @@
 import SwiftUI
 import AppKit
 
+// MARK: - Search Provider
+
+struct SearchProvider: Identifiable, Hashable {
+    let id: String
+    let name: String
+    let icon: String
+    let urlPattern: String  // {query} will be replaced
+
+    func searchURL(query: String) -> URL? {
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        let urlString = urlPattern.replacingOccurrences(of: "{query}", with: encoded)
+        return URL(string: urlString)
+    }
+
+    static let allProviders: [SearchProvider] = [
+        SearchProvider(id: "github", name: "GitHub", icon: "chevron.left.forwardslash.chevron.right", urlPattern: "https://github.com/search?q={query}"),
+        SearchProvider(id: "stackoverflow", name: "Stack Overflow", icon: "text.bubble", urlPattern: "https://stackoverflow.com/search?q={query}"),
+        SearchProvider(id: "npm", name: "npm", icon: "shippingbox", urlPattern: "https://www.npmjs.com/search?q={query}"),
+        SearchProvider(id: "pypi", name: "PyPI", icon: "cube", urlPattern: "https://pypi.org/search/?q={query}"),
+        SearchProvider(id: "crates", name: "Crates.io", icon: "cube.box", urlPattern: "https://crates.io/search?q={query}"),
+        SearchProvider(id: "mdn", name: "MDN", icon: "book", urlPattern: "https://developer.mozilla.org/en-US/search?q={query}"),
+        SearchProvider(id: "claude", name: "Claude Docs", icon: "sparkles", urlPattern: "https://docs.anthropic.com/en/docs?q={query}"),
+        SearchProvider(id: "google", name: "Google", icon: "magnifyingglass", urlPattern: "https://www.google.com/search?q={query}")
+    ]
+}
+
 // MARK: - Dashboard View
 
 struct DashboardView: View {
@@ -9,11 +35,18 @@ struct DashboardView: View {
     @ObservedObject var newsManager: NewsManager
     let onNavigate: (AppTab) -> Void
 
+    // Search state
+    @State private var searchQuery: String = ""
+    @State private var selectedProvider: SearchProvider = SearchProvider.allProviders[0]
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 // Header
                 headerSection
+
+                // Quick Search
+                quickSearchSection
 
                 // Quick Stats
                 statsSection
@@ -74,6 +107,122 @@ struct DashboardView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE, MMMM d"
         return formatter.string(from: Date())
+    }
+
+    // MARK: - Quick Search Section
+
+    private var quickSearchSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Quick Search")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.cmText)
+
+            HStack(spacing: 8) {
+                // Provider picker
+                Menu {
+                    ForEach(SearchProvider.allProviders) { provider in
+                        Button(action: { selectedProvider = provider }) {
+                            HStack {
+                                Image(systemName: provider.icon)
+                                Text(provider.name)
+                                if provider.id == selectedProvider.id {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: selectedProvider.icon)
+                            .font(.system(size: 11))
+                        Text(selectedProvider.name)
+                            .font(.system(size: 11, weight: .medium))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 9))
+                    }
+                    .foregroundColor(.cmText)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(Color.cmBorder.opacity(0.15))
+                    .cornerRadius(8)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+
+                // Search field
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 12))
+                        .foregroundColor(.cmTertiary)
+
+                    TextField("Search \(selectedProvider.name)...", text: $searchQuery, onCommit: {
+                        performSearch()
+                    })
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+
+                    if !searchQuery.isEmpty {
+                        Button(action: { searchQuery = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.cmTertiary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(Color.cmBorder.opacity(0.08))
+                .cornerRadius(8)
+
+                // Search button
+                Button(action: { performSearch() }) {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.cmBackground)
+                        .padding(8)
+                        .background(searchQuery.isEmpty ? Color.cmTertiary : Color.cmText)
+                        .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
+                .disabled(searchQuery.isEmpty)
+            }
+
+            // Quick provider buttons
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(SearchProvider.allProviders) { provider in
+                        Button(action: {
+                            selectedProvider = provider
+                            if !searchQuery.isEmpty {
+                                performSearch()
+                            }
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: provider.icon)
+                                    .font(.system(size: 10))
+                                Text(provider.name)
+                                    .font(.system(size: 10))
+                            }
+                            .foregroundColor(selectedProvider.id == provider.id ? .cmText : .cmSecondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .background(selectedProvider.id == provider.id ? Color.cmBorder.opacity(0.25) : Color.cmBorder.opacity(0.08))
+                            .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    private func performSearch() {
+        guard !searchQuery.isEmpty,
+              let url = selectedProvider.searchURL(query: searchQuery) else {
+            return
+        }
+        NSWorkspace.shared.open(url)
     }
 
     // MARK: - Stats Section

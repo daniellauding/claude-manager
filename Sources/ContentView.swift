@@ -17,6 +17,7 @@ enum AppTab: String, CaseIterable {
     case teams = "Teams"
     case community = "Community"
     case news = "News"
+    case admin = "Admin"
 
     var icon: String {
         switch self {
@@ -26,6 +27,7 @@ enum AppTab: String, CaseIterable {
         case .teams: return "person.3"
         case .community: return "globe"
         case .news: return "newspaper"
+        case .admin: return "gearshape.2"
         }
     }
 
@@ -37,6 +39,7 @@ enum AppTab: String, CaseIterable {
         case .teams: return "Teams"
         case .community: return "Hub"
         case .news: return "News"
+        case .admin: return "Admin"
         }
     }
 
@@ -48,7 +51,13 @@ enum AppTab: String, CaseIterable {
         case .teams: return "3"
         case .community: return "4"
         case .news: return "5"
+        case .admin: return "9"
         }
+    }
+
+    // Tabs visible to all users
+    static var publicTabs: [AppTab] {
+        [.home, .instances, .snippets, .teams, .community, .news]
     }
 }
 
@@ -57,6 +66,8 @@ struct ContentView: View {
     @ObservedObject var snippetManager: SnippetManager
     @StateObject private var newsManager = NewsManager()
     @StateObject private var teamManager = TeamManager.shared
+    @StateObject private var networkMonitor = NetworkMonitor.shared
+    @StateObject private var adminManager = AdminManager.shared
     @State private var showingKillConfirmation = false
     @State private var instanceToKill: ClaudeInstance?
     @State private var expandedInstances: Set<Int32> = []
@@ -76,6 +87,15 @@ struct ContentView: View {
     // Onboarding disabled for now
     @State private var showingOnboarding = false // !UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
 
+    // Computed property for visible tabs
+    private var visibleTabs: [AppTab] {
+        var tabs = AppTab.publicTabs
+        if adminManager.isAdmin {
+            tabs.append(.admin)
+        }
+        return tabs
+    }
+
     init(manager: ClaudeProcessManager, snippetManager: SnippetManager) {
         self.manager = manager
         self.snippetManager = snippetManager
@@ -85,6 +105,11 @@ struct ContentView: View {
         ZStack {
             // Main content
             VStack(spacing: 0) {
+                // Offline banner
+                if !networkMonitor.isConnected {
+                    offlineBanner
+                }
+
                 // Tab bar
                 tabBar
 
@@ -112,6 +137,8 @@ struct ContentView: View {
                     CommunityView(snippetManager: snippetManager)
                 case .news:
                     NewsView(manager: newsManager)
+                case .admin:
+                    AdminView(adminManager: adminManager)
                 }
 
                 Divider()
@@ -136,7 +163,7 @@ struct ContentView: View {
                     .transition(.opacity)
             }
         }
-        .frame(minWidth: 400, maxWidth: 700, minHeight: 400, maxHeight: 800)
+        .frame(minWidth: 400, minHeight: 400)
         .background(Color.cmBackground)
         .onAppear {
             manager.refresh()
@@ -155,10 +182,31 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - Offline Banner
+    private var offlineBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "wifi.slash")
+                .font(.system(size: 12, weight: .medium))
+
+            Text("You're offline")
+                .font(.system(size: 12, weight: .medium))
+
+            Spacer()
+
+            Text("Some features may be unavailable")
+                .font(.system(size: 10))
+                .foregroundColor(.white.opacity(0.8))
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color.red.opacity(0.9))
+    }
+
     // MARK: - Tab Bar
     private var tabBar: some View {
         HStack(spacing: 2) {
-            ForEach(AppTab.allCases, id: \.self) { tab in
+            ForEach(visibleTabs, id: \.self) { tab in
                 Button(action: { selectedTab = tab }) {
                     VStack(spacing: 2) {
                         Image(systemName: tab.icon)
@@ -171,33 +219,33 @@ struct ContentView: View {
                     .padding(.vertical, 6)
                     .background(selectedTab == tab ? Color.cmBorder.opacity(0.3) : Color.clear)
                     .cornerRadius(6)
-                    // Badge overlay
+                    // Badge overlay (monochrome)
                     .overlay(alignment: .topTrailing) {
                         if tab == .instances && !manager.instances.isEmpty {
                             Text("\(manager.instances.count)")
                                 .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(.white)
+                                .foregroundColor(.cmBackground)
                                 .padding(.horizontal, 4)
                                 .padding(.vertical, 1)
-                                .background(Color.red)
+                                .background(Color.cmText)
                                 .cornerRadius(6)
                                 .offset(x: 4, y: -2)
                         } else if tab == .snippets && !snippetManager.snippets.isEmpty {
                             Text("\(snippetManager.snippets.count)")
                                 .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(.white)
+                                .foregroundColor(.cmBackground)
                                 .padding(.horizontal, 4)
                                 .padding(.vertical, 1)
-                                .background(Color.blue)
+                                .background(Color.cmText)
                                 .cornerRadius(6)
                                 .offset(x: 4, y: -2)
                         } else if tab == .teams && !teamManager.teams.isEmpty {
                             Text("\(teamManager.teams.count)")
                                 .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(.white)
+                                .foregroundColor(.cmBackground)
                                 .padding(.horizontal, 4)
                                 .padding(.vertical, 1)
-                                .background(Color.purple)
+                                .background(Color.cmText)
                                 .cornerRadius(6)
                                 .offset(x: 4, y: -2)
                         }

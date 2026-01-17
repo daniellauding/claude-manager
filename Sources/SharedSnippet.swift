@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Shared Snippet Model (for Firebase)
 
 struct SharedSnippet: Identifiable, Codable {
-    var id: String  // Firebase key
+    var id: String = ""  // Firebase key (set after decoding)
     var title: String
     var content: String
     var category: String
@@ -15,6 +15,28 @@ struct SharedSnippet: Identifiable, Codable {
     var likes: Int
     var downloads: Int
     var reports: Int
+
+    // Custom decoding to handle Firebase structure
+    enum CodingKeys: String, CodingKey {
+        case id, title, content, category, tags, authorDeviceId, authorNickname
+        case createdAt, updatedAt, likes, downloads, reports
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = (try? container.decode(String.self, forKey: .id)) ?? ""
+        self.title = try container.decode(String.self, forKey: .title)
+        self.content = try container.decode(String.self, forKey: .content)
+        self.category = try container.decode(String.self, forKey: .category)
+        self.tags = (try? container.decode([String].self, forKey: .tags)) ?? []
+        self.authorDeviceId = try container.decode(String.self, forKey: .authorDeviceId)
+        self.authorNickname = try? container.decode(String.self, forKey: .authorNickname)
+        self.createdAt = try container.decode(Date.self, forKey: .createdAt)
+        self.updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        self.likes = (try? container.decode(Int.self, forKey: .likes)) ?? 0
+        self.downloads = (try? container.decode(Int.self, forKey: .downloads)) ?? 0
+        self.reports = (try? container.decode(Int.self, forKey: .reports)) ?? 0
+    }
 
     // Computed
     var displayAuthor: String {

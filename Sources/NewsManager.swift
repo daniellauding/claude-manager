@@ -116,6 +116,9 @@ class NewsManager: ObservableObject {
     private let storageURL: URL
     private var refreshTask: Task<Void, Never>?
 
+    // Firebase URL for default sources
+    private var defaultSourcesURL: String { "\(FirebaseConfig.databaseURL)/default_news_sources.json" }
+
     init() {
         let claudeDir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude")
@@ -126,8 +129,89 @@ class NewsManager: ObservableObject {
 
         // Set defaults if no sources
         if sources.isEmpty {
-            sources = NewsSource.defaults
-            saveToDisk()
+            // Try to fetch from Firebase first, fall back to hardcoded defaults
+            fetchDefaultSourcesFromFirebase { [weak self] firebaseSources in
+                DispatchQueue.main.async {
+                    if let firebaseSources = firebaseSources, !firebaseSources.isEmpty {
+                        self?.sources = firebaseSources
+                    } else {
+                        self?.sources = NewsSource.defaults
+                    }
+                    self?.saveToDisk()
+                }
+            }
+        }
+    }
+
+    // MARK: - Firebase Default Sources
+
+    private func fetchDefaultSourcesFromFirebase(completion: @escaping ([NewsSource]?) -> Void) {
+        guard FirebaseConfig.isConfigured else {
+            completion(nil)
+            return
+        }
+
+        guard let url = URL(string: defaultSourcesURL) else {
+            completion(nil)
+            return
+        }
+
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            guard let data = data, error == nil else {
+                completion(nil)
+                return
+            }
+
+            let sources = self.parseSourcesFromFirebase(data)
+            completion(sources.isEmpty ? nil : sources)
+        }.resume()
+    }
+
+    private func parseSourcesFromFirebase(_ data: Data) -> [NewsSource] {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return []
+        }
+
+        var sources: [NewsSource] = []
+        let decoder = JSONDecoder()
+
+        for (key, value) in json {
+            guard let dict = value as? [String: Any],
+                  let jsonData = try? JSONSerialization.data(withJSONObject: dict) else {
+                continue
+            }
+
+            if let source = try? decoder.decode(NewsSource.self, from: jsonData) {
+                // Reconstruct with the Firebase key as UUID if possible
+                let newSource = NewsSource(
+                    id: UUID(uuidString: key) ?? source.id,
+                    name: source.name,
+                    feedURL: source.feedURL,
+                    isEnabled: source.isEnabled,
+                    icon: source.icon
+                )
+                sources.append(newSource)
+            }
+        }
+
+        return sources.sorted { $0.name < $1.name }
+    }
+
+    /// Refreshes default sources from Firebase (for admins to push updates)
+    func refreshDefaultSourcesFromFirebase() {
+        fetchDefaultSourcesFromFirebase { [weak self] firebaseSources in
+            guard let self = self, let firebaseSources = firebaseSources else { return }
+
+            DispatchQueue.main.async {
+                // Merge: add new sources from Firebase that aren't already present
+                let existingURLs = Set(self.sources.map { $0.feedURL })
+                let newSources = firebaseSources.filter { !existingURLs.contains($0.feedURL) }
+
+                if !newSources.isEmpty {
+                    self.sources.append(contentsOf: newSources)
+                    self.saveToDisk()
+                }
+            }
         }
     }
 

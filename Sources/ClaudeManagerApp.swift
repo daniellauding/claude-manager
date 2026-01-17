@@ -38,6 +38,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             andEventID: AEEventID(kAEGetURL)
         )
 
+        // Initialize network monitoring (starts automatically)
+        _ = NetworkMonitor.shared
+
         // Create shared managers
         processManager = ClaudeProcessManager()
         snippetManager = SnippetManager()
@@ -64,7 +67,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.minSize = NSSize(width: 400, height: 400)
-        panel.maxSize = NSSize(width: 900, height: 1000)
+        panel.maxSize = NSSize(width: 1200, height: 1200)
         panel.contentViewController = NSHostingController(
             rootView: ContentView(manager: processManager, snippetManager: snippetManager)
         )
@@ -176,7 +179,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func showAbout() {
         let alert = NSAlert()
         alert.messageText = "Claude Manager"
-        alert.informativeText = "Version 1.3.1\n\nManage Claude CLI instances and snippets from your menu bar.\n\ngithub.com/daniellauding/claude-manager"
+        alert.informativeText = "Version 1.4.0\n\nManage Claude CLI instances and snippets from your menu bar.\n\ngithub.com/daniellauding/claude-manager"
         alert.alertStyle = .informational
         alert.addButton(withTitle: "OK")
         alert.runModal()

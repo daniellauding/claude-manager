@@ -90,52 +90,54 @@ struct SnippetView: View {
 
             Spacer()
 
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 // Skill Builder - prominent button
                 Button(action: { showingSkillBuilder = true }) {
-                    HStack(spacing: 5) {
+                    HStack(spacing: 4) {
                         Image(systemName: "wand.and.stars")
-                            .font(.system(size: 11))
+                            .font(.system(size: 10))
                         Text("Build")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: 10, weight: .medium))
                     }
                     .foregroundColor(.cmBackground)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
                     .background(Color.cmText)
-                    .cornerRadius(6)
+                    .cornerRadius(5)
                 }
                 .buttonStyle(.plain)
+                .fixedSize()
                 .help("Build a new skill with guided wizard")
 
                 Button(action: { showingDiscover = true }) {
-                    HStack(spacing: 5) {
+                    HStack(spacing: 4) {
                         Image(systemName: "sparkles")
-                            .font(.system(size: 11))
+                            .font(.system(size: 10))
                         Text("Discover")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: 10, weight: .medium))
                     }
                     .foregroundColor(.cmSecondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
                     .background(Color.cmBorder.opacity(0.2))
-                    .cornerRadius(6)
+                    .cornerRadius(5)
                 }
                 .buttonStyle(.plain)
+                .fixedSize()
                 .help("Find prompts on GitHub")
 
                 Button(action: { showingAddSheet = true }) {
                     Image(systemName: "plus")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                 }
                 .buttonStyle(.borderless)
                 .foregroundColor(.cmSecondary)
                 .keyboardShortcut("n", modifiers: [.command, .shift])
-                .help("Create new")
+                .help("Create new snippet")
 
                 Button(action: { showingFolderSettings = true }) {
                     Image(systemName: "folder")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                 }
                 .buttonStyle(.borderless)
                 .foregroundColor(.cmSecondary)
