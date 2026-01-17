@@ -649,7 +649,7 @@
 
     <script>
         // Firebase Configuration
-        const FIREBASE_URL = 'https://claude-manager-f2f10-default-rtdb.firebaseio.com';
+        const FIREBASE_URL = 'https://claude-manager-f2f10-default-rtdb.europe-west1.firebasedatabase.app';
 
         let allSnippets = [];
         let currentFilter = 'all';
@@ -675,10 +675,14 @@
                 const data = await response.json();
 
                 if (data) {
-                    allSnippets = Object.entries(data).map(([id, snippet]) => ({
-                        id,
-                        ...snippet
-                    })).reverse();
+                    allSnippets = Object.entries(data)
+                        .map(([id, snippet]) => ({
+                            id,
+                            ...snippet
+                        }))
+                        // Filter out invalid/empty snippets
+                        .filter(s => s.title && s.title.trim() && s.content && s.content.trim())
+                        .reverse();
                 } else {
                     allSnippets = [];
                 }

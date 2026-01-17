@@ -54,7 +54,7 @@ import Foundation
 
 struct FirebaseConfig {
     // TODO: Replace with your Firebase project values
-    static let databaseURL = "https://claude-manager-f2f10-default-rtdb.firebaseio.com"
+    static let databaseURL = "https://claude-manager-f2f10-default-rtdb.europe-west1.firebasedatabase.app"
     static let apiKey = "AIzaSyBBbOAoykgj8DHVnZVZHG0t5cGc1MjPYWc"
 
     // Endpoints
