@@ -17,16 +17,36 @@ import Foundation
 //     "shared_snippets": {
 //       ".read": true,
 //       ".write": true,
-//       ".indexOn": ["category", "createdAt", "likes"]
+//       ".indexOn": ["category", "createdAt", "likes", "downloads"]
 //     },
 //     "analytics": {
 //       ".read": false,
 //       ".write": true
 //     },
+//     "interactions": {
+//       ".read": false,
+//       ".write": true,
+//       "$itemType": {
+//         "$itemId": {
+//           ".indexOn": [".value"]
+//         }
+//       }
+//     },
+//     "popularity": {
+//       ".read": true,
+//       ".write": true,
+//       "$itemType": {
+//         ".indexOn": ["score", "lastInteraction"]
+//       }
+//     },
+//     "reports": {
+//       ".read": false,
+//       ".write": true
+//     },
 //     "users": {
 //       "$deviceId": {
-//         ".read": "auth == null",
-//         ".write": "auth == null"
+//         ".read": true,
+//         ".write": true
 //       }
 //     }
 //   }

@@ -90,6 +90,15 @@ enum AnalyticsEventType: String {
     case categoryViewed = "category_viewed"
     case searchPerformed = "search_performed"
     case folderWatched = "folder_watched"
+    // News and Discover
+    case newsViewed = "news_viewed"
+    case newsArticleOpened = "news_article_opened"
+    case discoverItemViewed = "discover_item_viewed"
+    case discoverItemSaved = "discover_item_saved"
+    // Interactions
+    case itemStarred = "item_starred"
+    case itemUnstarred = "item_unstarred"
+    case tabSwitched = "tab_switched"
 }
 
 // MARK: - User Profile (Anonymous)

@@ -175,7 +175,83 @@ class FirebaseManager: ObservableObject {
 
     func likeSnippet(_ snippetId: String) {
         incrementCounter(snippetId: snippetId, field: "likes")
-        trackEvent(.snippetLiked)
+        trackEvent(.snippetLiked, metadata: ["snippetId": snippetId])
+
+        // Track individual like for analytics
+        trackInteraction(type: "like", itemId: snippetId, itemType: "snippet")
+    }
+
+    // MARK: - Star/Favorite Item (for popularity tracking)
+
+    func starItem(itemId: String, itemType: String, title: String? = nil) {
+        trackEvent(.itemStarred, metadata: [
+            "itemId": itemId,
+            "itemType": itemType,
+            "title": title ?? ""
+        ])
+        trackInteraction(type: "star", itemId: itemId, itemType: itemType)
+    }
+
+    func unstarItem(itemId: String, itemType: String) {
+        trackEvent(.itemUnstarred, metadata: [
+            "itemId": itemId,
+            "itemType": itemType
+        ])
+    }
+
+    // MARK: - Track Interaction (for popularity metrics)
+
+    private func trackInteraction(type: String, itemId: String, itemType: String) {
+        guard FirebaseConfig.isConfigured else { return }
+
+        let deviceId = DeviceIdentity.shared.deviceId
+        let interactionURL = "\(FirebaseConfig.databaseURL)/interactions/\(itemType)/\(itemId)/\(deviceId).json"
+
+        guard let url = URL(string: interactionURL) else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let interaction: [String: Any] = [
+            "type": type,
+            "timestamp": Date().timeIntervalSince1970 * 1000
+        ]
+
+        request.httpBody = try? JSONSerialization.data(withJSONObject: interaction)
+        URLSession.shared.dataTask(with: request).resume()
+
+        // Also update popularity counter
+        updatePopularityScore(itemId: itemId, itemType: itemType)
+    }
+
+    private func updatePopularityScore(itemId: String, itemType: String) {
+        let popularityURL = "\(FirebaseConfig.databaseURL)/popularity/\(itemType)/\(itemId).json"
+        guard let url = URL(string: popularityURL) else { return }
+
+        // Get current score and increment
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            var currentScore = 0
+            if let data = data,
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let score = json["score"] as? Int {
+                currentScore = score
+            }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "PATCH"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+            let update: [String: Any] = [
+                "score": currentScore + 1,
+                "lastInteraction": Date().timeIntervalSince1970 * 1000,
+                "itemId": itemId,
+                "itemType": itemType
+            ]
+
+            request.httpBody = try? JSONSerialization.data(withJSONObject: update)
+            URLSession.shared.dataTask(with: request).resume()
+        }.resume()
     }
 
     // MARK: - Report Snippet

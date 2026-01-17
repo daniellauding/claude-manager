@@ -119,7 +119,7 @@ struct ContentView: View {
                     .transition(.opacity)
             }
         }
-        .frame(minWidth: 520, maxWidth: 800, minHeight: 450, maxHeight: 900)
+        .frame(minWidth: 400, maxWidth: 700, minHeight: 400, maxHeight: 800)
         .background(Color.cmBackground)
         .onAppear {
             manager.refresh()
@@ -139,44 +139,41 @@ struct ContentView: View {
         HStack(spacing: 0) {
             ForEach(AppTab.allCases, id: \.self) { tab in
                 Button(action: { selectedTab = tab }) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 4) {
                         Image(systemName: tab.icon)
-                            .font(.system(size: 12))
-                        Text(tab.rawValue)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 11))
 
-                        // Badge for instances
+                        // Badge overlay for instances/snippets
                         if tab == .instances && !manager.instances.isEmpty {
                             Text("\(manager.instances.count)")
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(.system(size: 9, weight: .semibold))
                                 .foregroundColor(selectedTab == tab ? .cmBackground : .cmSecondary)
-                                .padding(.horizontal, 5)
+                                .padding(.horizontal, 4)
                                 .padding(.vertical, 1)
                                 .background(selectedTab == tab ? Color.cmText : Color.cmBorder)
-                                .cornerRadius(8)
-                        }
-
-                        // Badge for snippets
-                        if tab == .snippets && !snippetManager.snippets.isEmpty {
+                                .cornerRadius(6)
+                        } else if tab == .snippets && !snippetManager.snippets.isEmpty {
                             Text("\(snippetManager.snippets.count)")
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(.system(size: 9, weight: .semibold))
                                 .foregroundColor(selectedTab == tab ? .cmBackground : .cmSecondary)
-                                .padding(.horizontal, 5)
+                                .padding(.horizontal, 4)
                                 .padding(.vertical, 1)
                                 .background(selectedTab == tab ? Color.cmText : Color.cmBorder)
-                                .cornerRadius(8)
+                                .cornerRadius(6)
                         }
                     }
                     .foregroundColor(selectedTab == tab ? .cmText : .cmSecondary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
                     .background(selectedTab == tab ? Color.cmBorder.opacity(0.3) : Color.clear)
+                    .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut(KeyEquivalent(Character(tab.keyboardShortcut)), modifiers: .command)
                 .onChange(of: selectedTab) { newTab in
                     UserDefaults.standard.set(newTab.rawValue, forKey: "lastTab")
                 }
+                .help(tab.rawValue)
             }
 
             Spacer()
@@ -185,7 +182,7 @@ struct ContentView: View {
             if selectedTab == .instances {
                 Button(action: { launchClaude() }) {
                     Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                 }
                 .buttonStyle(.borderless)
                 .foregroundColor(.cmText)
@@ -194,7 +191,7 @@ struct ContentView: View {
 
                 Button(action: { manager.refresh() }) {
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                         .rotationEffect(.degrees(manager.isLoading ? 360 : 0))
                         .animation(manager.isLoading ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: manager.isLoading)
                 }
@@ -202,9 +199,11 @@ struct ContentView: View {
                 .foregroundColor(.cmText)
                 .keyboardShortcut("r", modifiers: .command)
                 .help("Refresh (Cmd+R)")
-                .padding(.trailing, 16)
+                .padding(.trailing, 12)
             }
         }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
     }
 
     // MARK: - Instances Content
