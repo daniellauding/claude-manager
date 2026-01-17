@@ -3,34 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claude Manager - Menu Bar App for Claude Prompts & Instances</title>
-    <meta name="description" content="Manage your Claude CLI instances and build a prompt library from the macOS menu bar. 50+ curated prompts, MCP configs, and GitHub search included.">
+    <title>Claude Manager - Menu Bar App for macOS</title>
+    <meta name="description" content="Manage Claude CLI instances and organize your prompt library from the macOS menu bar.">
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:title" content="Claude Manager">
-    <meta property="og:description" content="Menu bar app for Claude prompts, MCPs, and instance management">
+    <meta property="og:description" content="Menu bar app for Claude CLI on macOS">
     <meta property="og:url" content="https://daniellauding.github.io/claude-manager">
-    <meta property="og:image" content="https://daniellauding.github.io/claude-manager/og-image.png">
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Claude Manager">
-    <meta name="twitter:description" content="Menu bar app for Claude prompts, MCPs, and instance management">
-    <meta name="twitter:image" content="https://daniellauding.github.io/claude-manager/og-image.png">
+    <meta name="twitter:description" content="Menu bar app for Claude CLI on macOS">
 
     <style>
+        /* System font stack */
         :root {
-            --bg: #0a0a0a;
-            --surface: #141414;
-            --surface-hover: #1a1a1a;
-            --border: #2a2a2a;
-            --text: #e5e5e5;
-            --text-secondary: #888;
-            --accent: #c9a0ff;
-            --accent-soft: rgba(201, 160, 255, 0.15);
-            --green: #4ade80;
-            --blue: #60a5fa;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            --font-mono: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, monospace;
+            --max-width: 720px;
+            --radius: 8px;
+            --transition: 0.15s ease;
+        }
+
+        /* Light mode (default) */
+        :root {
+            --bg: #fafafa;
+            --bg-secondary: #ffffff;
+            --text: #1a1a1a;
+            --text-secondary: #6b7280;
+            --text-tertiary: #9ca3af;
+            --border: #e5e7eb;
+            --border-hover: #d1d5db;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --code-bg: #f3f4f6;
+        }
+
+        /* Dark mode */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0f0f0f;
+                --bg-secondary: #1a1a1a;
+                --text: #f5f5f5;
+                --text-secondary: #a1a1aa;
+                --text-tertiary: #71717a;
+                --border: #27272a;
+                --border-hover: #3f3f46;
+                --accent: #3b82f6;
+                --accent-hover: #60a5fa;
+                --code-bg: #18181b;
+            }
         }
 
         * {
@@ -40,21 +64,25 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: var(--font-sans);
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
 
         .container {
-            max-width: 1000px;
+            max-width: var(--max-width);
             margin: 0 auto;
             padding: 0 24px;
         }
 
-        /* Nav */
+        /* Navigation */
         nav {
-            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg);
             border-bottom: 1px solid var(--border);
         }
 
@@ -62,10 +90,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            height: 56px;
         }
 
         .logo {
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 600;
             color: var(--text);
             text-decoration: none;
@@ -74,74 +103,88 @@
             gap: 8px;
         }
 
-        .nav-links {
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: var(--text);
+            color: var(--bg);
+            border-radius: 6px;
             display: flex;
-            gap: 24px;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
         }
 
-        .nav-links a {
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link {
             color: var(--text-secondary);
             text-decoration: none;
             font-size: 14px;
+            padding: 6px 12px;
+            border-radius: var(--radius);
+            transition: color var(--transition);
         }
 
-        .nav-links a:hover {
+        .nav-link:hover {
             color: var(--text);
+        }
+
+        .nav-link.primary {
+            background: var(--text);
+            color: var(--bg);
+            font-weight: 500;
+        }
+
+        .nav-link.primary:hover {
+            opacity: 0.9;
         }
 
         /* Hero */
         .hero {
-            padding: 100px 0 80px;
+            padding: 80px 0 60px;
             text-align: center;
         }
 
-        .badge {
-            display: inline-block;
-            background: var(--accent-soft);
-            color: var(--accent);
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 500;
-            margin-bottom: 24px;
-        }
-
         .hero h1 {
-            font-size: 56px;
+            font-size: 40px;
             font-weight: 700;
-            margin-bottom: 20px;
-            letter-spacing: -0.03em;
-            background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+            line-height: 1.1;
         }
 
         .hero p {
-            font-size: 20px;
+            font-size: 18px;
             color: var(--text-secondary);
-            max-width: 600px;
-            margin: 0 auto 40px;
+            max-width: 480px;
+            margin: 0 auto 32px;
         }
 
-        .cta-buttons {
+        .cta-group {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 16px 32px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
+            padding: 12px 20px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 500;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: all var(--transition);
+            border: 1px solid transparent;
         }
 
         .btn-primary {
@@ -150,190 +193,149 @@
         }
 
         .btn-primary:hover {
-            background: #fff;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 40px rgba(255,255,255,0.1);
+            opacity: 0.9;
         }
 
         .btn-secondary {
-            background: var(--surface);
+            background: var(--bg-secondary);
             color: var(--text);
-            border: 1px solid var(--border);
+            border-color: var(--border);
         }
 
         .btn-secondary:hover {
-            border-color: var(--text-secondary);
-            background: var(--surface-hover);
+            border-color: var(--border-hover);
         }
 
-        .install-cmd {
+        .install-code {
             display: inline-block;
-            font-family: 'SF Mono', Monaco, monospace;
-            font-size: 15px;
-            background: var(--surface);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            background: var(--code-bg);
             border: 1px solid var(--border);
-            padding: 12px 20px;
-            border-radius: 8px;
-            color: var(--accent);
-        }
-
-        /* Stats */
-        .stats {
-            display: flex;
-            gap: 48px;
-            justify-content: center;
-            padding: 40px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .stat {
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--text);
-        }
-
-        .stat-label {
-            font-size: 14px;
+            padding: 10px 16px;
+            border-radius: var(--radius);
             color: var(--text-secondary);
         }
 
         /* Features */
         .features {
-            padding: 80px 0;
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
         }
 
-        .features h2 {
-            font-size: 36px;
-            text-align: center;
-            margin-bottom: 16px;
-        }
-
-        .features .subtitle {
-            text-align: center;
-            color: var(--text-secondary);
-            margin-bottom: 60px;
-        }
-
-        .feature-grid {
+        .features-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 32px;
         }
 
-        @media (max-width: 768px) {
-            .feature-grid {
+        @media (max-width: 600px) {
+            .features-grid {
                 grid-template-columns: 1fr;
             }
         }
 
-        .feature-card {
-            background: var(--surface);
+        .feature {
+            padding: 24px;
+            background: var(--bg-secondary);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 28px;
-            transition: all 0.2s;
-        }
-
-        .feature-card:hover {
-            border-color: var(--text-secondary);
-            transform: translateY(-4px);
+            border-radius: 12px;
         }
 
         .feature-icon {
-            font-size: 28px;
-            margin-bottom: 16px;
+            font-size: 24px;
+            margin-bottom: 12px;
         }
 
-        .feature-card h3 {
-            font-size: 18px;
-            margin-bottom: 8px;
+        .feature h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
         }
 
-        .feature-card p {
-            color: var(--text-secondary);
+        .feature p {
             font-size: 14px;
-            line-height: 1.6;
-        }
-
-        /* MCP Section */
-        .mcp-section {
-            padding: 80px 0;
-            background: var(--surface);
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .mcp-section h2 {
-            font-size: 36px;
-            text-align: center;
-            margin-bottom: 16px;
-        }
-
-        .mcp-section .subtitle {
-            text-align: center;
             color: var(--text-secondary);
-            margin-bottom: 48px;
+            line-height: 1.5;
         }
 
-        .mcp-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
+        /* How it works */
+        .how-it-works {
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .steps {
+            display: flex;
+            flex-direction: column;
             gap: 16px;
         }
 
-        @media (max-width: 768px) {
-            .mcp-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        .mcp-item {
-            background: var(--bg);
+        .step {
+            display: flex;
+            gap: 16px;
+            padding: 20px;
+            background: var(--bg-secondary);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 20px;
-            text-align: center;
         }
 
-        .mcp-item .icon {
-            font-size: 24px;
-            margin-bottom: 8px;
+        .step-number {
+            width: 28px;
+            height: 28px;
+            background: var(--code-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            flex-shrink: 0;
         }
 
-        .mcp-item h4 {
-            font-size: 14px;
+        .step-content h4 {
+            font-size: 15px;
+            font-weight: 600;
             margin-bottom: 4px;
         }
 
-        .mcp-item p {
-            font-size: 12px;
+        .step-content p {
+            font-size: 14px;
             color: var(--text-secondary);
         }
 
-        /* CTA Section */
-        .cta-section {
-            padding: 100px 0;
+        /* CTA */
+        .cta {
+            padding: 80px 0;
             text-align: center;
+            border-top: 1px solid var(--border);
         }
 
-        .cta-section h2 {
-            font-size: 40px;
-            margin-bottom: 16px;
+        .cta h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
         }
 
-        .cta-section p {
+        .cta p {
             color: var(--text-secondary);
-            margin-bottom: 32px;
-            font-size: 18px;
+            margin-bottom: 24px;
         }
 
         /* Footer */
         footer {
-            padding: 40px 0;
+            padding: 32px 0;
             border-top: 1px solid var(--border);
         }
 
@@ -341,38 +343,45 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        @media (max-width: 768px) {
-            footer .container {
-                flex-direction: column;
-                gap: 16px;
-            }
+            flex-wrap: wrap;
+            gap: 16px;
         }
 
         .footer-links {
             display: flex;
-            gap: 24px;
+            gap: 20px;
         }
 
-        footer a {
+        .footer-links a {
             color: var(--text-secondary);
             text-decoration: none;
-            font-size: 14px;
+            font-size: 13px;
+            transition: color var(--transition);
         }
 
-        footer a:hover {
+        .footer-links a:hover {
             color: var(--text);
         }
 
         .copyright {
-            color: var(--text-secondary);
-            font-size: 14px;
+            font-size: 13px;
+            color: var(--text-tertiary);
         }
 
-        /* Product Hunt Badge */
-        .ph-badge {
-            margin-top: 40px;
+        /* Responsive */
+        @media (max-width: 600px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .hero p {
+                font-size: 16px;
+            }
+
+            footer .container {
+                flex-direction: column;
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -380,160 +389,99 @@
     <nav>
         <div class="container">
             <a href="/" class="logo">
-                <span>⌘</span> Claude Manager
+                <span class="logo-icon">C</span>
+                Claude Manager
             </a>
             <div class="nav-links">
-                <a href="https://github.com/daniellauding/claude-manager">GitHub</a>
-                <a href="https://github.com/daniellauding/claude-manager/releases">Download</a>
+                <a href="https://github.com/daniellauding/claude-manager" class="nav-link">GitHub</a>
+                <a href="https://github.com/daniellauding/claude-manager/releases/latest" class="nav-link primary">Download</a>
             </div>
         </div>
     </nav>
 
-    <div class="container">
-        <!-- Hero -->
+    <main>
         <section class="hero">
-            <span class="badge">✨ Free & Open Source</span>
-            <h1>Claude Manager</h1>
-            <p>Your prompt library and Claude CLI dashboard, right in the menu bar. 50+ curated prompts and MCP configs included.</p>
-            <div class="cta-buttons">
-                <a href="https://github.com/daniellauding/claude-manager/releases/latest" class="btn btn-primary">
-                    ⬇️ Download for macOS
-                </a>
-                <a href="https://github.com/daniellauding/claude-manager" class="btn btn-secondary">
-                    View on GitHub
-                </a>
+            <div class="container">
+                <h1>Manage Claude from your menu bar</h1>
+                <p>Monitor CLI instances, organize prompts, and share with the community. Built for macOS.</p>
+                <div class="cta-group">
+                    <a href="https://github.com/daniellauding/claude-manager/releases/latest" class="btn btn-primary">
+                        Download for macOS
+                    </a>
+                    <a href="https://github.com/daniellauding/claude-manager" class="btn btn-secondary">
+                        View Source
+                    </a>
+                </div>
+                <code class="install-code">brew install daniellauding/tap/claude-manager</code>
             </div>
-            <code class="install-cmd">brew install daniellauding/tap/claude-manager</code>
-
-            <!-- Product Hunt Badge (uncomment when launched) -->
-            <!--
-            <div class="ph-badge">
-                <a href="https://www.producthunt.com/posts/claude-manager?utm_source=badge-featured" target="_blank">
-                    <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=YOUR_POST_ID&theme=dark" alt="Claude Manager on Product Hunt" width="250" height="54" />
-                </a>
-            </div>
-            -->
         </section>
-    </div>
 
-    <!-- Stats -->
-    <section class="stats">
-        <div class="stat">
-            <div class="stat-value">50+</div>
-            <div class="stat-label">Curated Prompts</div>
-        </div>
-        <div class="stat">
-            <div class="stat-value">15+</div>
-            <div class="stat-label">MCP Configs</div>
-        </div>
-        <div class="stat">
-            <div class="stat-value">100%</div>
-            <div class="stat-label">Free & Open Source</div>
-        </div>
-    </section>
-
-    <div class="container">
-        <!-- Features -->
         <section class="features">
-            <h2>Everything you need</h2>
-            <p class="subtitle">Manage Claude sessions and organize your prompt library</p>
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h3>Instance Dashboard</h3>
-                    <p>See all running Claude CLI sessions with PID, runtime, CPU, and memory. Click to focus any terminal.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📚</div>
-                    <h3>Prompt Library</h3>
-                    <p>Save and organize agents, skills, prompts, and templates. Filter by category, tags, or favorites.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔍</div>
-                    <h3>Discover</h3>
-                    <p>Browse 50+ curated prompts or search GitHub for community prompts and MCP servers.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔌</div>
-                    <h3>MCP Configs</h3>
-                    <p>Ready-to-use setup guides for GitHub, Slack, PostgreSQL, Notion, Figma, and more.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📁</div>
-                    <h3>Folder Sync</h3>
-                    <p>Watch folders to auto-import markdown files. Your prompts stay in sync automatically.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
-                    <h3>Keyboard First</h3>
-                    <p>Cmd+1/2 to switch tabs, Cmd+N for new, Cmd+R to refresh. Fast and native.</p>
+            <div class="container">
+                <div class="features-grid">
+                    <div class="feature">
+                        <div class="feature-icon">📊</div>
+                        <h3>Instance Dashboard</h3>
+                        <p>See all running Claude CLI sessions at a glance. PID, runtime, CPU, memory usage.</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">📚</div>
+                        <h3>Prompt Library</h3>
+                        <p>Save agents, skills, prompts, and templates. Organize with tags and favorites.</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🌐</div>
+                        <h3>Community</h3>
+                        <p>Share snippets with other users. Browse and download from the community library.</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">📁</div>
+                        <h3>Folder Sync</h3>
+                        <p>Watch folders to auto-import markdown files. Your prompts stay in sync.</p>
+                    </div>
                 </div>
             </div>
         </section>
-    </div>
 
-    <!-- MCP Section -->
-    <section class="mcp-section">
-        <div class="container">
-            <h2>MCP Servers Included</h2>
-            <p class="subtitle">Setup guides for the most popular Model Context Protocol servers</p>
-            <div class="mcp-grid">
-                <div class="mcp-item">
-                    <div class="icon">🐙</div>
-                    <h4>GitHub</h4>
-                    <p>Issues, PRs, Search</p>
-                </div>
-                <div class="mcp-item">
-                    <div class="icon">🐘</div>
-                    <h4>PostgreSQL</h4>
-                    <p>Database Queries</p>
-                </div>
-                <div class="mcp-item">
-                    <div class="icon">💬</div>
-                    <h4>Slack</h4>
-                    <p>Messages & Search</p>
-                </div>
-                <div class="mcp-item">
-                    <div class="icon">📝</div>
-                    <h4>Notion</h4>
-                    <p>Pages & Databases</p>
-                </div>
-                <div class="mcp-item">
-                    <div class="icon">🎨</div>
-                    <h4>Figma</h4>
-                    <p>Design Automation</p>
-                </div>
-                <div class="mcp-item">
-                    <div class="icon">🎭</div>
-                    <h4>Playwright</h4>
-                    <p>Browser Control</p>
-                </div>
-                <div class="mcp-item">
-                    <div class="icon">☁️</div>
-                    <h4>AWS</h4>
-                    <p>Docs & Billing</p>
-                </div>
-                <div class="mcp-item">
-                    <div class="icon">🐛</div>
-                    <h4>Sentry</h4>
-                    <p>Error Tracking</p>
+        <section class="how-it-works">
+            <div class="container">
+                <div class="section-title">How it works</div>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Install via Homebrew or download</h4>
+                            <p>One command to install. Runs in your menu bar.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>See your Claude instances</h4>
+                            <p>All running CLI sessions appear automatically with details.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Build your prompt library</h4>
+                            <p>Create, organize, and share prompts with the community.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <div class="container">
-        <!-- CTA -->
-        <section class="cta-section">
-            <h2>Ready to get organized?</h2>
-            <p>Download now and start building your prompt library.</p>
-            <div class="cta-buttons">
+        <section class="cta">
+            <div class="container">
+                <h2>Free and open source</h2>
+                <p>MIT licensed. Built with SwiftUI.</p>
                 <a href="https://github.com/daniellauding/claude-manager/releases/latest" class="btn btn-primary">
-                    ⬇️ Download for macOS
+                    Download for macOS
                 </a>
             </div>
         </section>
-    </div>
+    </main>
 
     <footer>
         <div class="container">
@@ -541,9 +489,8 @@
                 <a href="https://github.com/daniellauding/claude-manager">GitHub</a>
                 <a href="https://github.com/daniellauding/claude-manager/issues">Issues</a>
                 <a href="https://github.com/daniellauding/claude-manager/releases">Releases</a>
-                <a href="https://twitter.com/daniellauding">Twitter</a>
             </div>
-            <p class="copyright">MIT License · Built with SwiftUI</p>
+            <span class="copyright">MIT License</span>
         </div>
     </footer>
 </body>

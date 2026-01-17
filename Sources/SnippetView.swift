@@ -470,6 +470,8 @@ struct SnippetRow: View {
     @State private var isHovering = false
     @State private var showCopiedFeedback = false
     @State private var showShareMenu = false
+    @State private var showingCommunityShare = false
+    @State private var shareStatus: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -578,6 +580,10 @@ struct SnippetRow: View {
 
                 // Share menu
                 Menu {
+                    Button(action: shareToCommunity) {
+                        Label("Share to Community", systemImage: "person.3")
+                    }
+                    Divider()
                     Button(action: copyAsMarkdown) {
                         Label("Copy as Markdown", systemImage: "doc.text")
                     }
@@ -587,10 +593,10 @@ struct SnippetRow: View {
                 } label: {
                     HStack(spacing: 5) {
                         Image(systemName: "square.and.arrow.up")
-                        Text("Share")
+                        Text(shareStatus ?? "Share")
                     }
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.cmSecondary)
+                    .foregroundColor(shareStatus != nil ? .cmText : .cmSecondary)
                 }
                 .menuStyle(.borderlessButton)
 
@@ -627,6 +633,25 @@ struct SnippetRow: View {
     }
 
     // MARK: - Share Functions
+
+    private func shareToCommunity() {
+        guard FirebaseConfig.isConfigured else {
+            shareStatus = "Not configured"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { shareStatus = nil }
+            return
+        }
+
+        shareStatus = "Sharing..."
+        FirebaseManager.shared.shareSnippet(snippet) { result in
+            switch result {
+            case .success:
+                shareStatus = "Shared!"
+            case .failure:
+                shareStatus = "Failed"
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { shareStatus = nil }
+        }
+    }
 
     private func copyAsMarkdown() {
         let markdown = """

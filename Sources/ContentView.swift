@@ -14,6 +14,7 @@ enum AppTab: String, CaseIterable {
     case home = "Home"
     case instances = "Instances"
     case snippets = "Library"
+    case community = "Community"
     case news = "News"
 
     var icon: String {
@@ -21,6 +22,7 @@ enum AppTab: String, CaseIterable {
         case .home: return "house"
         case .instances: return "terminal"
         case .snippets: return "books.vertical"
+        case .community: return "person.3"
         case .news: return "newspaper"
         }
     }
@@ -30,7 +32,8 @@ enum AppTab: String, CaseIterable {
         case .home: return "0"
         case .instances: return "1"
         case .snippets: return "2"
-        case .news: return "3"
+        case .community: return "3"
+        case .news: return "4"
         }
     }
 }
@@ -88,6 +91,8 @@ struct ContentView: View {
                     instancesContent
                 case .snippets:
                     SnippetView(manager: snippetManager)
+                case .community:
+                    CommunityView(snippetManager: snippetManager)
                 case .news:
                     NewsView(manager: newsManager)
                 }
