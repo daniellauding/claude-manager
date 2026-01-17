@@ -4,7 +4,7 @@ import AppKit
 // MARK: - App Info
 
 struct AppInfo {
-    static let version = "1.4.0"
+    static let version = "1.4.1"
     static let build = "1"
     static let author = "Daniel Lauding"
     static let email = "daniel@lauding.se"
