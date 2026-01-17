@@ -19,6 +19,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var badgeTimer: Timer?
     var processManager: ClaudeProcessManager!
     var snippetManager: SnippetManager!
+    var eventMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Create shared managers
@@ -42,11 +43,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             rootView: ContentView(manager: processManager, snippetManager: snippetManager)
         )
 
+        // Monitor for clicks outside popover to close it
+        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            if let popover = self?.popover, popover.isShown {
+                popover.performClose(nil)
+            }
+        }
+
         // Hide dock icon
         NSApp.setActivationPolicy(.accessory)
 
         // Start badge update timer
         startBadgeTimer()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
     }
 
     @objc func handleStatusBarClick() {
