@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SnippetEditor: View {
     @ObservedObject var manager: SnippetManager
+    @ObservedObject var teamManager: TeamManager = TeamManager.shared
     let snippet: Snippet?
     @Environment(\.dismiss) var dismiss
 
@@ -11,7 +12,23 @@ struct SnippetEditor: View {
     @State private var tagsText: String = ""
     @State private var project: String = ""
 
+    // Team collaboration fields
+    @State private var privacy: PrivacyLevel = .private
+    @State private var selectedTeamId: String? = nil
+    @State private var selectedProjectId: String? = nil
+
     var isEditing: Bool { snippet != nil }
+
+    var availableTeams: [Team] {
+        teamManager.teams
+    }
+
+    var availableProjects: [Project] {
+        if let teamId = selectedTeamId {
+            return teamManager.projects.filter { $0.teamId == teamId }
+        }
+        return teamManager.projects.filter { $0.isPersonal }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -127,6 +144,84 @@ struct SnippetEditor: View {
                         }
                     }
 
+                    // Privacy & Team (only show if Firebase is configured)
+                    if FirebaseConfig.isConfigured {
+                        Divider()
+                            .padding(.vertical, 4)
+
+                        // Privacy Level
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Privacy")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(.cmSecondary)
+
+                            HStack(spacing: 8) {
+                                ForEach(PrivacyLevel.allCases, id: \.self) { level in
+                                    PrivacyButton(
+                                        level: level,
+                                        isSelected: privacy == level,
+                                        isEnabled: level == .team ? selectedTeamId != nil : true
+                                    ) {
+                                        if level != .team || selectedTeamId != nil {
+                                            privacy = level
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Team selector (if teams available)
+                        if !availableTeams.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Share with Team (optional)")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(.cmSecondary)
+
+                                Picker("", selection: $selectedTeamId) {
+                                    Text("Personal (no team)").tag(String?.none)
+                                    ForEach(availableTeams) { team in
+                                        HStack {
+                                            Image(systemName: team.icon)
+                                            Text(team.name)
+                                        }
+                                        .tag(Optional(team.id))
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .onChange(of: selectedTeamId) { newValue in
+                                    // Update privacy when team changes
+                                    if newValue != nil {
+                                        privacy = .team
+                                    } else if privacy == .team {
+                                        privacy = .private
+                                    }
+                                    selectedProjectId = nil  // Reset project when team changes
+                                }
+                            }
+
+                            // Team Project selector (if team selected)
+                            if selectedTeamId != nil && !availableProjects.isEmpty {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Team Project (optional)")
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundColor(.cmSecondary)
+
+                                    Picker("", selection: $selectedProjectId) {
+                                        Text("No project").tag(String?.none)
+                                        ForEach(availableProjects) { proj in
+                                            HStack {
+                                                Image(systemName: proj.icon)
+                                                Text(proj.name)
+                                            }
+                                            .tag(Optional(proj.id))
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                }
+                            }
+                        }
+                    }
+
                     // Content
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
@@ -195,7 +290,7 @@ struct SnippetEditor: View {
             updated.project = project.isEmpty ? nil : project
             manager.updateSnippet(updated)
         } else {
-            // Create new
+            // Create new local snippet
             let newSnippet = Snippet(
                 title: title,
                 content: content,
@@ -204,9 +299,60 @@ struct SnippetEditor: View {
                 project: project.isEmpty ? nil : project
             )
             manager.addSnippet(newSnippet)
+
+            // Also create a TeamSnippet if team is selected or privacy is public
+            if FirebaseConfig.isConfigured && (selectedTeamId != nil || privacy == .public) {
+                let teamSnippet = TeamSnippet(
+                    title: title,
+                    content: content,
+                    category: category.rawValue,
+                    tags: tags,
+                    teamId: selectedTeamId,
+                    projectId: selectedProjectId,
+                    privacy: privacy
+                )
+
+                teamManager.createTeamSnippet(teamSnippet) { result in
+                    switch result {
+                    case .success:
+                        print("Team snippet created successfully")
+                    case .failure(let error):
+                        print("Failed to create team snippet: \(error)")
+                    }
+                }
+            }
         }
 
         dismiss()
+    }
+}
+
+// MARK: - Privacy Button Component
+
+struct PrivacyButton: View {
+    let level: PrivacyLevel
+    let isSelected: Bool
+    let isEnabled: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: level.icon)
+                    .font(.system(size: 14))
+                Text(level.displayName)
+                    .font(.system(size: 10, weight: .medium))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .foregroundColor(isSelected ? .white : (isEnabled ? .cmText : .cmTertiary))
+            .background(isSelected ? Color.accentColor : Color.cmBorder.opacity(0.3))
+            .cornerRadius(6)
+            .opacity(isEnabled ? 1.0 : 0.5)
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .help(level.description + (isEnabled ? "" : " (Select a team first)"))
     }
 }
 

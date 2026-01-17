@@ -16,9 +16,15 @@ struct AppInfo {
 
 struct SettingsView: View {
     @ObservedObject var snippetManager: SnippetManager
+    @ObservedObject var userAuth: UserAuth = UserAuth.shared
+    @ObservedObject var syncManager: SyncManager = SyncManager.shared
     @Binding var isPresented: Bool
     @State private var exportMessage: String?
     @State private var importMessage: String?
+    @State private var emailInput: String = ""
+    @State private var isSigningIn: Bool = false
+    @State private var authError: String?
+    @State private var showingSignOutConfirm: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -55,6 +61,11 @@ struct SettingsView: View {
                 VStack(spacing: 24) {
                     // About Section
                     aboutSection
+
+                    Divider().padding(.horizontal, 20)
+
+                    // Account & Sync Section
+                    accountSyncSection
 
                     Divider().padding(.horizontal, 20)
 
@@ -228,6 +239,213 @@ struct SettingsView: View {
 
         // Close settings
         isPresented = false
+    }
+
+    // MARK: - Account & Sync Section
+
+    private var accountSyncSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Account & Sync")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.cmText)
+                .padding(.horizontal, 20)
+
+            if userAuth.isLoggedIn, let user = userAuth.currentUser {
+                // Logged in state
+                VStack(spacing: 12) {
+                    // User info
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.circle.fill")
+                            .font(.system(size: 36))
+                            .foregroundColor(.cmSecondary)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(user.displayName)
+                                .font(.system(size: 13, weight: .medium))
+                            Text(user.email)
+                                .font(.system(size: 11))
+                                .foregroundColor(.cmTertiary)
+                            Text("\(user.deviceCount) device(s) linked")
+                                .font(.system(size: 10))
+                                .foregroundColor(.cmTertiary)
+                        }
+
+                        Spacer()
+
+                        // Sync status
+                        VStack(alignment: .trailing, spacing: 2) {
+                            HStack(spacing: 4) {
+                                Image(systemName: syncManager.syncStatus.icon)
+                                    .font(.system(size: 10))
+                                Text(syncManager.syncStatus.rawValue)
+                                    .font(.system(size: 10))
+                            }
+                            .foregroundColor(.cmSecondary)
+
+                            if let lastSync = syncManager.lastSyncDate {
+                                Text("Last: \(lastSync.formatted(date: .omitted, time: .shortened))")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(.cmTertiary)
+                            }
+                        }
+                    }
+                    .padding(12)
+                    .background(Color.cmBorder.opacity(0.1))
+                    .cornerRadius(8)
+
+                    // Sync toggle
+                    Toggle(isOn: Binding(
+                        get: { userAuth.syncEnabled },
+                        set: { userAuth.enableSync($0) }
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Sync Enabled")
+                                .font(.system(size: 12, weight: .medium))
+                            Text("Keep snippets and settings in sync across devices")
+                                .font(.system(size: 10))
+                                .foregroundColor(.cmTertiary)
+                        }
+                    }
+                    .toggleStyle(.switch)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.cmBorder.opacity(0.1))
+                    .cornerRadius(8)
+
+                    // Sync now button
+                    if userAuth.syncEnabled {
+                        Button(action: { syncManager.syncAll() }) {
+                            HStack {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                    .font(.system(size: 12))
+                                Text(syncManager.isSyncing ? "Syncing..." : "Sync Now")
+                                    .font(.system(size: 12))
+                            }
+                            .foregroundColor(.cmSecondary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.cmBorder.opacity(0.2))
+                            .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(syncManager.isSyncing)
+                    }
+
+                    // Sign out
+                    Button(action: { showingSignOutConfirm = true }) {
+                        HStack {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 12))
+                            Text("Sign Out")
+                                .font(.system(size: 12))
+                        }
+                        .foregroundColor(.cmSecondary)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 4)
+                }
+                .padding(.horizontal, 20)
+                .alert("Sign Out?", isPresented: $showingSignOutConfirm) {
+                    Button("Cancel", role: .cancel) {}
+                    Button("Sign Out", role: .destructive) {
+                        userAuth.signOut()
+                    }
+                } message: {
+                    Text("Your local data will be kept, but sync will be disabled.")
+                }
+            } else {
+                // Logged out state
+                VStack(spacing: 12) {
+                    // Benefits
+                    VStack(alignment: .leading, spacing: 8) {
+                        benefitRow(icon: "arrow.triangle.2.circlepath", text: "Sync snippets across devices")
+                        benefitRow(icon: "gearshape", text: "Keep settings in sync")
+                        benefitRow(icon: "person.3", text: "Access team features")
+                    }
+                    .padding(12)
+                    .background(Color.cmBorder.opacity(0.1))
+                    .cornerRadius(8)
+
+                    // Email input
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Email")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.cmSecondary)
+
+                        TextField("your@email.com", text: $emailInput)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12))
+                    }
+
+                    // Error message
+                    if let error = authError {
+                        Text(error)
+                            .font(.system(size: 11))
+                            .foregroundColor(.red)
+                    }
+
+                    // Sign in button
+                    Button(action: signIn) {
+                        HStack {
+                            if isSigningIn {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                            } else {
+                                Image(systemName: "person.badge.plus")
+                                    .font(.system(size: 12))
+                            }
+                            Text(isSigningIn ? "Signing in..." : "Sign In / Create Account")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundColor(.cmBackground)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(isValidEmail ? Color.cmText : Color.cmTertiary)
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!isValidEmail || isSigningIn)
+
+                    Text("No password needed. We'll link this device to your account.")
+                        .font(.system(size: 10))
+                        .foregroundColor(.cmTertiary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+
+    private var isValidEmail: Bool {
+        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        return emailInput.range(of: emailRegex, options: .regularExpression) != nil
+    }
+
+    private func benefitRow(icon: String, text: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 11))
+                .foregroundColor(.cmSecondary)
+                .frame(width: 16)
+            Text(text)
+                .font(.system(size: 11))
+                .foregroundColor(.cmSecondary)
+        }
+    }
+
+    private func signIn() {
+        isSigningIn = true
+        authError = nil
+
+        userAuth.signInWithEmail(emailInput) { result in
+            isSigningIn = false
+            switch result {
+            case .success:
+                emailInput = ""
+            case .failure(let error):
+                authError = error.localizedDescription
+            }
+        }
     }
 
     // MARK: - About Section

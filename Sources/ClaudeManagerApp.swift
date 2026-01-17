@@ -13,15 +13,31 @@ struct ClaudeManagerApp: App {
     }
 }
 
+// Notification for magic link invites
+extension Notification.Name {
+    static let teamInviteReceived = Notification.Name("teamInviteReceived")
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
-    var popover: NSPopover!
+    var panel: NSPanel!
     var badgeTimer: Timer?
     var processManager: ClaudeProcessManager!
     var snippetManager: SnippetManager!
     var eventMonitor: Any?
 
+    // Pending invite token from URL scheme
+    static var pendingInviteToken: String?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Register URL scheme handler
+        NSAppleEventManager.shared().setEventHandler(
+            self,
+            andSelector: #selector(handleURLEvent(_:withReplyEvent:)),
+            forEventClass: AEEventClass(kInternetEventClass),
+            andEventID: AEEventID(kAEGetURL)
+        )
+
         // Create shared managers
         processManager = ClaudeProcessManager()
         snippetManager = SnippetManager()
@@ -35,18 +51,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
 
-        // Create popover with shared managers
-        popover = NSPopover()
-        popover.contentSize = NSSize(width: 480, height: 500)
-        popover.behavior = .transient  // Close when clicking outside
-        popover.contentViewController = NSHostingController(
+        // Create floating panel (resizable window)
+        panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 550),
+            styleMask: [.titled, .closable, .resizable, .nonactivatingPanel, .utilityWindow],
+            backing: .buffered,
+            defer: false
+        )
+        panel.title = "Claude Manager"
+        panel.isFloatingPanel = true
+        panel.level = .floating
+        panel.hidesOnDeactivate = false
+        panel.isReleasedWhenClosed = false
+        panel.minSize = NSSize(width: 400, height: 400)
+        panel.maxSize = NSSize(width: 900, height: 1000)
+        panel.contentViewController = NSHostingController(
             rootView: ContentView(manager: processManager, snippetManager: snippetManager)
         )
 
-        // Monitor for clicks outside popover to close it
-        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            if let popover = self?.popover, popover.isShown {
-                popover.performClose(nil)
+        // Monitor for clicks outside to close
+        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            guard let self = self, self.panel.isVisible else { return }
+            // Check if click is outside the panel
+            let clickLocation = event.locationInWindow
+            if !self.panel.frame.contains(NSEvent.mouseLocation) {
+                self.panel.orderOut(nil)
             }
         }
 
@@ -187,13 +216,69 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func togglePopover() {
-        if let button = statusItem.button {
-            if popover.isShown {
-                popover.performClose(nil)
-            } else {
-                popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-                NSApp.activate(ignoringOtherApps: true)
+        if panel.isVisible {
+            panel.orderOut(nil)
+        } else {
+            // Position panel below status bar item
+            if let button = statusItem.button, let window = button.window {
+                let buttonRect = button.convert(button.bounds, to: nil)
+                let screenRect = window.convertToScreen(buttonRect)
+                let panelWidth = panel.frame.width
+                let panelHeight = panel.frame.height
+                let x = screenRect.midX - panelWidth / 2
+                let y = screenRect.minY - panelHeight - 5
+                panel.setFrameOrigin(NSPoint(x: x, y: y))
+            }
+            panel.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
+    // MARK: - URL Scheme Handling
+
+    @objc func handleURLEvent(_ event: NSAppleEventDescriptor, withReplyEvent replyEvent: NSAppleEventDescriptor) {
+        guard let urlString = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue,
+              let url = URL(string: urlString) else {
+            return
+        }
+
+        handleIncomingURL(url)
+    }
+
+    func handleIncomingURL(_ url: URL) {
+        // Handle claudemanager://invite/{token} URLs
+        guard url.scheme == "claudemanager" else { return }
+
+        if url.host == "invite" {
+            // Extract token from path: /token
+            let token = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+
+            if !token.isEmpty {
+                AppDelegate.pendingInviteToken = token
+
+                // Post notification for the UI to handle
+                NotificationCenter.default.post(
+                    name: .teamInviteReceived,
+                    object: nil,
+                    userInfo: ["token": token]
+                )
+
+                // Show the panel and switch to Teams tab
+                showPanelWithInvite()
             }
         }
+    }
+
+    func showPanelWithInvite() {
+        // Show the panel
+        if !panel.isVisible {
+            togglePopover()
+        }
+
+        // Post a notification to switch to Teams tab
+        NotificationCenter.default.post(
+            name: Notification.Name("switchToTeamsTab"),
+            object: nil
+        )
     }
 }

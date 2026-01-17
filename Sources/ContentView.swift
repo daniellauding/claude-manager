@@ -14,6 +14,7 @@ enum AppTab: String, CaseIterable {
     case home = "Home"
     case instances = "Instances"
     case snippets = "Library"
+    case teams = "Teams"
     case community = "Community"
     case news = "News"
 
@@ -22,8 +23,20 @@ enum AppTab: String, CaseIterable {
         case .home: return "house"
         case .instances: return "terminal"
         case .snippets: return "books.vertical"
-        case .community: return "person.3"
+        case .teams: return "person.3"
+        case .community: return "globe"
         case .news: return "newspaper"
+        }
+    }
+
+    var shortName: String {
+        switch self {
+        case .home: return "Home"
+        case .instances: return "Run"
+        case .snippets: return "Lib"
+        case .teams: return "Teams"
+        case .community: return "Hub"
+        case .news: return "News"
         }
     }
 
@@ -32,8 +45,9 @@ enum AppTab: String, CaseIterable {
         case .home: return "0"
         case .instances: return "1"
         case .snippets: return "2"
-        case .community: return "3"
-        case .news: return "4"
+        case .teams: return "3"
+        case .community: return "4"
+        case .news: return "5"
         }
     }
 }
@@ -42,6 +56,7 @@ struct ContentView: View {
     @ObservedObject var manager: ClaudeProcessManager
     @ObservedObject var snippetManager: SnippetManager
     @StateObject private var newsManager = NewsManager()
+    @StateObject private var teamManager = TeamManager.shared
     @State private var showingKillConfirmation = false
     @State private var instanceToKill: ClaudeInstance?
     @State private var expandedInstances: Set<Int32> = []
@@ -91,6 +106,8 @@ struct ContentView: View {
                     instancesContent
                 case .snippets:
                     SnippetView(manager: snippetManager)
+                case .teams:
+                    TeamListView(teamManager: teamManager)
                 case .community:
                     CommunityView(snippetManager: snippetManager)
                 case .news:
@@ -124,6 +141,10 @@ struct ContentView: View {
         .onAppear {
             manager.refresh()
         }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("switchToTeamsTab"))) { _ in
+            selectedTab = .teams
+            UserDefaults.standard.set(AppTab.teams.rawValue, forKey: "lastTab")
+        }
         .alert("Stop Instance?", isPresented: $showingKillConfirmation, presenting: instanceToKill) { instance in
             Button("Cancel", role: .cancel) {}
             Button("Stop", role: .destructive) {
@@ -136,44 +157,57 @@ struct ContentView: View {
 
     // MARK: - Tab Bar
     private var tabBar: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 2) {
             ForEach(AppTab.allCases, id: \.self) { tab in
                 Button(action: { selectedTab = tab }) {
-                    HStack(spacing: 4) {
+                    VStack(spacing: 2) {
                         Image(systemName: tab.icon)
-                            .font(.system(size: 11))
-
-                        // Badge overlay for instances/snippets
-                        if tab == .instances && !manager.instances.isEmpty {
-                            Text("\(manager.instances.count)")
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundColor(selectedTab == tab ? .cmBackground : .cmSecondary)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(selectedTab == tab ? Color.cmText : Color.cmBorder)
-                                .cornerRadius(6)
-                        } else if tab == .snippets && !snippetManager.snippets.isEmpty {
-                            Text("\(snippetManager.snippets.count)")
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundColor(selectedTab == tab ? .cmBackground : .cmSecondary)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(selectedTab == tab ? Color.cmText : Color.cmBorder)
-                                .cornerRadius(6)
-                        }
+                            .font(.system(size: 14))
+                        Text(tab.shortName)
+                            .font(.system(size: 9, weight: .medium))
                     }
-                    .foregroundColor(selectedTab == tab ? .cmText : .cmSecondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
+                    .foregroundColor(selectedTab == tab ? .cmText : .cmTertiary)
+                    .frame(minWidth: 50)
+                    .padding(.vertical, 6)
                     .background(selectedTab == tab ? Color.cmBorder.opacity(0.3) : Color.clear)
                     .cornerRadius(6)
+                    // Badge overlay
+                    .overlay(alignment: .topTrailing) {
+                        if tab == .instances && !manager.instances.isEmpty {
+                            Text("\(manager.instances.count)")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(Color.red)
+                                .cornerRadius(6)
+                                .offset(x: 4, y: -2)
+                        } else if tab == .snippets && !snippetManager.snippets.isEmpty {
+                            Text("\(snippetManager.snippets.count)")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(Color.blue)
+                                .cornerRadius(6)
+                                .offset(x: 4, y: -2)
+                        } else if tab == .teams && !teamManager.teams.isEmpty {
+                            Text("\(teamManager.teams.count)")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(Color.purple)
+                                .cornerRadius(6)
+                                .offset(x: 4, y: -2)
+                        }
+                    }
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut(KeyEquivalent(Character(tab.keyboardShortcut)), modifiers: .command)
                 .onChange(of: selectedTab) { newTab in
                     UserDefaults.standard.set(newTab.rawValue, forKey: "lastTab")
                 }
-                .help(tab.rawValue)
             }
 
             Spacer()
@@ -182,28 +216,28 @@ struct ContentView: View {
             if selectedTab == .instances {
                 Button(action: { launchClaude() }) {
                     Image(systemName: "plus")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                 }
                 .buttonStyle(.borderless)
                 .foregroundColor(.cmText)
                 .keyboardShortcut("n", modifiers: .command)
-                .help("New Claude session (Cmd+N)")
+                .help("New Claude session")
 
                 Button(action: { manager.refresh() }) {
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                         .rotationEffect(.degrees(manager.isLoading ? 360 : 0))
                         .animation(manager.isLoading ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: manager.isLoading)
                 }
                 .buttonStyle(.borderless)
                 .foregroundColor(.cmText)
                 .keyboardShortcut("r", modifiers: .command)
-                .help("Refresh (Cmd+R)")
-                .padding(.trailing, 12)
+                .help("Refresh")
+                .padding(.trailing, 8)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
     }
 
     // MARK: - Instances Content
