@@ -147,7 +147,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func showAbout() {
         let alert = NSAlert()
         alert.messageText = "Claude Manager"
-        alert.informativeText = "Version 1.3.0\n\nManage Claude CLI instances and snippets from your menu bar.\n\ngithub.com/daniellauding/claude-manager"
+        alert.informativeText = "Version 1.3.1\n\nManage Claude CLI instances and snippets from your menu bar.\n\ngithub.com/daniellauding/claude-manager"
         alert.alertStyle = .informational
         alert.addButton(withTitle: "OK")
         alert.runModal()
