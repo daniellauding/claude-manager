@@ -15,54 +15,46 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
             --font-display: 'Fraunces', Georgia, serif;
             --font-body: 'Inter', -apple-system, sans-serif;
-
-            /* Light mode */
             --bg: #ffffff;
-            --bg-alt: #f8f8f8;
-            --text: #1a1a1a;
-            --text-secondary: #666666;
-            --text-muted: #999999;
-            --accent: #4F46E5;
-            --accent-hover: #4338CA;
+            --bg-alt: #f7f7f8;
+            --bg-dark: #0f0f10;
+            --text: #111111;
+            --text-secondary: #555555;
+            --text-muted: #888888;
+            --accent: #5046e5;
+            --accent-light: #6366f1;
+            --accent-glow: rgba(80, 70, 229, 0.15);
             --border: #e5e5e5;
             --card-bg: #ffffff;
-            --card-shadow: 0 4px 24px rgba(0,0,0,0.08);
-            --gradient-start: #4F46E5;
-            --gradient-end: #7C3AED;
+            --card-shadow: 0 4px 32px rgba(0,0,0,0.08);
+            --gradient: linear-gradient(135deg, #5046e5 0%, #7c3aed 50%, #ec4899 100%);
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg: #0a0a0a;
-                --bg-alt: #141414;
-                --text: #ffffff;
-                --text-secondary: #a0a0a0;
-                --text-muted: #666666;
-                --accent: #818CF8;
-                --accent-hover: #A5B4FC;
-                --border: #2a2a2a;
-                --card-bg: #1a1a1a;
-                --card-shadow: 0 4px 24px rgba(0,0,0,0.4);
-                --gradient-start: #818CF8;
-                --gradient-end: #A78BFA;
+                --bg: #09090b;
+                --bg-alt: #111113;
+                --bg-dark: #000000;
+                --text: #fafafa;
+                --text-secondary: #a1a1aa;
+                --text-muted: #71717a;
+                --accent: #818cf8;
+                --accent-light: #a5b4fc;
+                --accent-glow: rgba(129, 140, 248, 0.15);
+                --border: #27272a;
+                --card-bg: #18181b;
+                --card-shadow: 0 4px 32px rgba(0,0,0,0.5);
             }
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
 
         body {
             font-family: var(--font-body);
@@ -73,6 +65,18 @@
             overflow-x: hidden;
         }
 
+        /* Animated Background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            background: radial-gradient(ellipse 80% 50% at 50% -20%, var(--accent-glow), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
         /* Navigation */
         nav {
             position: fixed;
@@ -80,24 +84,23 @@
             left: 0;
             right: 0;
             z-index: 100;
-            padding: 20px 40px;
+            padding: 16px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: var(--bg);
-            border-bottom: 1px solid transparent;
+            background: transparent;
             transition: all 0.3s ease;
         }
 
         nav.scrolled {
             background: var(--bg);
-            border-bottom-color: var(--border);
-            padding: 16px 40px;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
         }
 
         .logo {
             font-family: var(--font-display);
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
             color: var(--text);
             text-decoration: none;
@@ -107,34 +110,37 @@
         }
 
         .logo-mark {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
-            border-radius: 10px;
+            width: 32px;
+            height: 32px;
+            background: var(--gradient);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: 700;
-            font-size: 18px;
+            font-size: 16px;
         }
 
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 32px;
+            gap: 8px;
         }
 
         .nav-link {
             color: var(--text-secondary);
             text-decoration: none;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 500;
-            transition: color 0.2s;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
         }
 
         .nav-link:hover {
             color: var(--text);
+            background: var(--accent-glow);
         }
 
         .btn {
@@ -142,14 +148,16 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            padding: 14px 28px;
-            border-radius: 100px;
-            font-size: 15px;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
             font-weight: 600;
             text-decoration: none;
             transition: all 0.2s ease;
             cursor: pointer;
             border: none;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn-primary {
@@ -159,22 +167,34 @@
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
         }
 
         .btn-secondary {
-            background: transparent;
+            background: var(--bg-alt);
             color: var(--text);
-            border: 2px solid var(--border);
+            border: 1px solid var(--border);
         }
 
         .btn-secondary:hover {
-            border-color: var(--text);
+            border-color: var(--accent);
+            background: var(--accent-glow);
         }
 
         .btn-large {
-            padding: 18px 36px;
-            font-size: 17px;
+            padding: 16px 32px;
+            font-size: 16px;
+            border-radius: 12px;
+        }
+
+        .btn-gradient {
+            background: var(--gradient);
+            color: white;
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px var(--accent-glow);
         }
 
         /* Hero Section */
@@ -185,68 +205,80 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            padding: 120px 40px 80px;
+            padding: 140px 40px 100px;
             position: relative;
+            z-index: 1;
         }
 
         .hero-badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 16px;
-            background: var(--bg-alt);
-            border: 1px solid var(--border);
+            padding: 6px 14px;
+            background: var(--accent-glow);
+            border: 1px solid var(--accent);
             border-radius: 100px;
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 32px;
-            animation: fadeInUp 0.6s ease;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--accent);
+            margin-bottom: 24px;
+            animation: fadeInDown 0.6s ease;
         }
 
         .hero-badge-dot {
-            width: 8px;
-            height: 8px;
-            background: #22C55E;
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .hero h1 {
             font-family: var(--font-display);
-            font-size: clamp(48px, 8vw, 80px);
+            font-size: clamp(42px, 7vw, 72px);
             font-weight: 700;
             line-height: 1.1;
-            max-width: 900px;
-            margin-bottom: 24px;
+            max-width: 800px;
+            margin-bottom: 20px;
             animation: fadeInUp 0.6s ease 0.1s both;
         }
 
-        .hero h1 span {
-            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+        .hero h1 .gradient-text {
+            background: var(--gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
         .hero p {
-            font-size: clamp(18px, 2.5vw, 22px);
+            font-size: clamp(16px, 2vw, 20px);
             color: var(--text-secondary);
-            max-width: 600px;
-            margin-bottom: 48px;
+            max-width: 540px;
+            margin-bottom: 40px;
             animation: fadeInUp 0.6s ease 0.2s both;
         }
 
         .hero-cta {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             flex-wrap: wrap;
             justify-content: center;
-            margin-bottom: 48px;
+            margin-bottom: 32px;
             animation: fadeInUp 0.6s ease 0.3s both;
         }
 
@@ -254,12 +286,12 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 16px 24px;
+            padding: 12px 20px;
             background: var(--bg-alt);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 10px;
             font-family: 'SF Mono', Monaco, monospace;
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-secondary);
             animation: fadeInUp 0.6s ease 0.4s both;
             cursor: pointer;
@@ -268,46 +300,79 @@
 
         .hero-install:hover {
             border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .hero-install code {
+            color: var(--text);
         }
 
         .hero-install-copy {
             color: var(--accent);
             font-family: var(--font-body);
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 12px;
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            gap: 48px;
+            justify-content: center;
+            margin-top: 48px;
+            animation: fadeInUp 0.6s ease 0.5s both;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1;
+        }
+
+        .stat-value .counting {
+            display: inline-block;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
         }
 
         /* App Preview */
         .hero-preview {
             width: 100%;
-            max-width: 1000px;
-            margin-top: 60px;
-            animation: fadeInUp 0.8s ease 0.5s both;
+            max-width: 1100px;
+            margin-top: 80px;
+            padding: 0 20px;
+            animation: fadeInUp 0.8s ease 0.6s both;
         }
 
         .preview-window {
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: 16px;
-            box-shadow: var(--card-shadow);
+            box-shadow: var(--card-shadow), 0 0 0 1px rgba(255,255,255,0.05) inset;
             overflow: hidden;
+            transform: perspective(1000px) rotateX(2deg);
+            transition: transform 0.4s ease;
+        }
+
+        .preview-window:hover {
+            transform: perspective(1000px) rotateX(0deg);
         }
 
         .preview-header {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 16px 20px;
+            padding: 14px 18px;
             background: var(--bg-alt);
             border-bottom: 1px solid var(--border);
         }
@@ -316,174 +381,229 @@
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background: var(--border);
         }
 
-        .preview-dot.red { background: #FF5F56; }
-        .preview-dot.yellow { background: #FFBD2E; }
-        .preview-dot.green { background: #27CA40; }
+        .preview-dot.red { background: #ff5f57; }
+        .preview-dot.yellow { background: #febc2e; }
+        .preview-dot.green { background: #28c840; }
+
+        .preview-title {
+            flex: 1;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
 
         .preview-content {
-            padding: 32px;
-            min-height: 400px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-muted);
-            font-size: 14px;
+            position: relative;
+            aspect-ratio: 16/10;
+            overflow: hidden;
         }
 
-        .preview-placeholder {
-            text-align: center;
-        }
-
-        .preview-placeholder-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
+        .preview-content img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         /* Features Section */
         .features {
             padding: 120px 40px;
             background: var(--bg-alt);
+            position: relative;
+            z-index: 1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .section-header {
             text-align: center;
-            max-width: 700px;
+            max-width: 600px;
             margin: 0 auto 80px;
         }
 
         .section-label {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             font-size: 13px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.08em;
             color: var(--accent);
             margin-bottom: 16px;
         }
 
+        .section-label::before,
+        .section-label::after {
+            content: '';
+            width: 24px;
+            height: 1px;
+            background: var(--accent);
+            opacity: 0.3;
+        }
+
         .section-header h2 {
             font-family: var(--font-display);
-            font-size: clamp(36px, 5vw, 52px);
+            font-size: clamp(32px, 5vw, 48px);
             font-weight: 700;
             line-height: 1.2;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .section-header p {
-            font-size: 18px;
+            font-size: 17px;
             color: var(--text-secondary);
         }
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 24px;
-            max-width: 1200px;
-            margin: 0 auto;
+        }
+
+        @media (max-width: 900px) {
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 600px) {
+            .features-grid { grid-template-columns: 1fr; }
         }
 
         .feature-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 40px;
+            border-radius: 16px;
+            padding: 32px;
             transition: all 0.3s ease;
             cursor: default;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient);
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
         .feature-card:hover {
             transform: translateY(-4px);
             box-shadow: var(--card-shadow);
-            border-color: var(--accent);
+            border-color: transparent;
         }
 
-        .feature-icon {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            margin-bottom: 24px;
-        }
-
-        .feature-card h3 {
-            font-family: var(--font-display);
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-
-        .feature-card p {
-            color: var(--text-secondary);
-            font-size: 16px;
-            line-height: 1.6;
-        }
-
-        /* How it Works */
-        .how-it-works {
-            padding: 120px 40px;
-        }
-
-        .steps {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .step {
-            display: flex;
-            gap: 32px;
-            padding: 40px 0;
-            border-bottom: 1px solid var(--border);
-            opacity: 0.5;
-            transition: all 0.4s ease;
-        }
-
-        .step:hover, .step.active {
+        .feature-card:hover::before {
             opacity: 1;
         }
 
-        .step:last-child {
-            border-bottom: none;
-        }
-
-        .step-number {
-            flex-shrink: 0;
+        .feature-icon {
             width: 48px;
             height: 48px;
-            background: var(--bg-alt);
-            border: 2px solid var(--border);
-            border-radius: 50%;
+            background: var(--accent-glow);
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: var(--font-display);
-            font-size: 20px;
-            font-weight: 600;
-            transition: all 0.3s;
+            font-size: 24px;
+            margin-bottom: 20px;
         }
 
-        .step:hover .step-number {
-            background: var(--text);
-            color: var(--bg);
-            border-color: var(--text);
-        }
-
-        .step-content h3 {
-            font-family: var(--font-display);
-            font-size: 28px;
+        .feature-card h3 {
+            font-size: 18px;
             font-weight: 600;
             margin-bottom: 8px;
         }
 
-        .step-content p {
+        .feature-card p {
             color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Showcase Section */
+        .showcase {
+            padding: 120px 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+
+        @media (max-width: 900px) {
+            .showcase-grid {
+                grid-template-columns: 1fr;
+                gap: 48px;
+            }
+        }
+
+        .showcase-content h3 {
+            font-family: var(--font-display);
+            font-size: clamp(28px, 4vw, 40px);
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .showcase-content p {
             font-size: 17px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .showcase-list {
+            list-style: none;
+        }
+
+        .showcase-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .showcase-list li:last-child {
+            border-bottom: none;
+        }
+
+        .showcase-list .check {
+            width: 20px;
+            height: 20px;
+            background: var(--accent-glow);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            font-size: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .showcase-image {
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border);
+        }
+
+        .showcase-image img {
+            width: 100%;
+            display: block;
         }
 
         /* CTA Section */
@@ -491,37 +611,41 @@
             padding: 120px 40px;
             background: var(--bg-alt);
             text-align: center;
+            position: relative;
+            z-index: 1;
         }
 
         .cta-inner {
-            max-width: 800px;
+            max-width: 700px;
             margin: 0 auto;
         }
 
         .cta h2 {
             font-family: var(--font-display);
-            font-size: clamp(36px, 5vw, 56px);
+            font-size: clamp(32px, 5vw, 52px);
             font-weight: 700;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
         }
 
         .cta p {
-            font-size: 20px;
+            font-size: 18px;
             color: var(--text-secondary);
-            margin-bottom: 40px;
+            margin-bottom: 32px;
         }
 
         .cta-buttons {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             justify-content: center;
             flex-wrap: wrap;
         }
 
         /* Footer */
         footer {
-            padding: 60px 40px;
+            padding: 48px 40px;
             border-top: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
         }
 
         .footer-inner {
@@ -536,13 +660,13 @@
 
         .footer-links {
             display: flex;
-            gap: 32px;
+            gap: 24px;
         }
 
         .footer-links a {
             color: var(--text-secondary);
             text-decoration: none;
-            font-size: 15px;
+            font-size: 14px;
             transition: color 0.2s;
         }
 
@@ -552,14 +676,14 @@
 
         .footer-copy {
             color: var(--text-muted);
-            font-size: 14px;
+            font-size: 13px;
         }
 
-        /* Scroll Animations */
+        /* Animations */
         .reveal {
             opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.6s ease;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .reveal.visible {
@@ -569,31 +693,18 @@
 
         /* Mobile */
         @media (max-width: 768px) {
-            nav {
-                padding: 16px 24px;
-            }
-
-            .nav-links {
-                display: none;
-            }
-
-            .hero, .features, .how-it-works, .cta {
-                padding: 80px 24px;
-            }
-
-            .step {
-                flex-direction: column;
-                gap: 16px;
-            }
-
-            .footer-inner {
-                flex-direction: column;
-                text-align: center;
-            }
+            nav { padding: 12px 20px; }
+            .nav-links a:not(.btn) { display: none; }
+            .hero, .features, .showcase, .cta { padding: 80px 20px; }
+            .stats-bar { gap: 32px; flex-wrap: wrap; }
+            .stat-value { font-size: 28px; }
+            .footer-inner { flex-direction: column; text-align: center; }
         }
     </style>
 </head>
 <body>
+    <div class="bg-gradient"></div>
+
     <nav id="nav">
         <a href="/" class="logo">
             <span class="logo-mark">C</span>
@@ -611,19 +722,36 @@
             <span class="hero-badge-dot"></span>
             Free & Open Source
         </div>
-        <h1>Your AI command center,<br><span>in the menu bar</span></h1>
+        <h1>Your AI command center,<br><span class="gradient-text">in the menu bar</span></h1>
         <p>Monitor Claude CLI instances, organize your prompt library, and share with the community. Built native for macOS.</p>
+
         <div class="hero-cta">
-            <a href="https://github.com/daniellauding/claude-manager/releases/latest" class="btn btn-primary btn-large">
+            <a href="https://github.com/daniellauding/claude-manager/releases/latest" class="btn btn-gradient btn-large">
                 Download for macOS
             </a>
             <a href="https://github.com/daniellauding/claude-manager" class="btn btn-secondary btn-large">
                 View on GitHub
             </a>
         </div>
+
         <div class="hero-install" onclick="copyInstall()">
             <code>brew install daniellauding/tap/claude-manager</code>
             <span class="hero-install-copy" id="copyText">Copy</span>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="stat-value"><span class="counting" data-target="500">0</span>+</div>
+                <div class="stat-label">Downloads</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value"><span class="counting" data-target="50">0</span>+</div>
+                <div class="stat-label">Community Prompts</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">100%</div>
+                <div class="stat-label">Free Forever</div>
+            </div>
         </div>
 
         <div class="hero-preview">
@@ -632,84 +760,94 @@
                     <div class="preview-dot red"></div>
                     <div class="preview-dot yellow"></div>
                     <div class="preview-dot green"></div>
+                    <div class="preview-title">Claude Manager</div>
+                    <div style="width: 60px;"></div>
                 </div>
                 <div class="preview-content">
-                    <div class="preview-placeholder">
-                        <div class="preview-placeholder-icon">📊</div>
-                        <p>App screenshot coming soon</p>
-                    </div>
+                    <img src="https://dummyimage.com/1200x750/1a1a1a/666666&text=App+Screenshot" alt="Claude Manager Preview">
                 </div>
             </div>
         </div>
     </section>
 
     <section class="features" id="features">
-        <div class="section-header reveal">
-            <span class="section-label">Features</span>
-            <h2>Everything you need to work with Claude</h2>
-            <p>A lightweight menu bar app that puts your AI workflow at your fingertips</p>
-        </div>
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="section-label">Features</span>
+                <h2>Everything you need to work smarter with Claude</h2>
+                <p>A lightweight menu bar app that puts your AI workflow at your fingertips</p>
+            </div>
 
-        <div class="features-grid">
-            <div class="feature-card reveal">
-                <div class="feature-icon">📊</div>
-                <h3>Instance Dashboard</h3>
-                <p>See all running Claude CLI sessions at a glance. Monitor PID, runtime, CPU, and memory usage in real-time.</p>
-            </div>
-            <div class="feature-card reveal">
-                <div class="feature-icon">📚</div>
-                <h3>Prompt Library</h3>
-                <p>Save and organize your agents, skills, prompts, and templates. Filter by category, tags, or favorites.</p>
-            </div>
-            <div class="feature-card reveal">
-                <div class="feature-icon">🌐</div>
-                <h3>Community</h3>
-                <p>Share your best prompts with other users. Browse and download from the community library.</p>
-            </div>
-            <div class="feature-card reveal">
-                <div class="feature-icon">📁</div>
-                <h3>Folder Sync</h3>
-                <p>Watch folders to auto-import markdown files. Your prompts stay in sync automatically.</p>
-            </div>
-            <div class="feature-card reveal">
-                <div class="feature-icon">⚡</div>
-                <h3>Keyboard First</h3>
-                <p>Navigate with shortcuts. Cmd+1/2/3 to switch tabs, Cmd+N for new, Cmd+R to refresh.</p>
-            </div>
-            <div class="feature-card reveal">
-                <div class="feature-icon">🔧</div>
-                <h3>Skill Builder</h3>
-                <p>Create custom skills with our guided wizard. AI-powered suggestions to help you build faster.</p>
+            <div class="features-grid">
+                <div class="feature-card reveal">
+                    <div class="feature-icon">📊</div>
+                    <h3>Instance Dashboard</h3>
+                    <p>See all running Claude CLI sessions. Monitor PID, runtime, CPU, and memory in real-time.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon">📚</div>
+                    <h3>Prompt Library</h3>
+                    <p>Save and organize agents, skills, prompts, and templates. Filter by category or favorites.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon">🌐</div>
+                    <h3>Community</h3>
+                    <p>Share your best prompts with other users. Browse and download from the community.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon">📁</div>
+                    <h3>Folder Sync</h3>
+                    <p>Watch folders to auto-import markdown files. Your prompts stay in sync automatically.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Keyboard First</h3>
+                    <p>Navigate with shortcuts. Cmd+1/2/3 for tabs, Cmd+N for new, Cmd+R to refresh.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon">🔧</div>
+                    <h3>Skill Builder</h3>
+                    <p>Create custom skills with our guided wizard. AI-powered suggestions included.</p>
+                </div>
             </div>
         </div>
     </section>
 
-    <section class="how-it-works">
-        <div class="section-header reveal">
-            <span class="section-label">How it works</span>
-            <h2>Up and running in seconds</h2>
+    <section class="showcase">
+        <div class="container">
+            <div class="showcase-grid">
+                <div class="showcase-content reveal">
+                    <h3>Monitor all your Claude sessions</h3>
+                    <p>Never lose track of your running instances. See which project each session is working on, how long it's been running, and resource usage.</p>
+                    <ul class="showcase-list">
+                        <li><span class="check">✓</span> Real-time CPU and memory monitoring</li>
+                        <li><span class="check">✓</span> Working directory and git branch info</li>
+                        <li><span class="check">✓</span> One-click to focus any terminal</li>
+                        <li><span class="check">✓</span> Graceful stop or force kill</li>
+                    </ul>
+                </div>
+                <div class="showcase-image reveal">
+                    <img src="https://dummyimage.com/600x400/1a1a1a/666666&text=Instance+Dashboard" alt="Instance Dashboard">
+                </div>
+            </div>
         </div>
+    </section>
 
-        <div class="steps">
-            <div class="step reveal active">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                    <h3>Install with Homebrew</h3>
-                    <p>One command to install. Runs quietly in your menu bar.</p>
+    <section class="showcase" style="background: var(--bg-alt);">
+        <div class="container">
+            <div class="showcase-grid" style="direction: rtl;">
+                <div class="showcase-content reveal" style="direction: ltr;">
+                    <h3>Build your prompt library</h3>
+                    <p>Create a personal collection of prompts, agents, and skills. Organize with tags, mark favorites, and share with the community.</p>
+                    <ul class="showcase-list">
+                        <li><span class="check">✓</span> Categories: Agents, Skills, Prompts, MCPs</li>
+                        <li><span class="check">✓</span> Tags and project organization</li>
+                        <li><span class="check">✓</span> One-click copy to clipboard</li>
+                        <li><span class="check">✓</span> Share to community with one click</li>
+                    </ul>
                 </div>
-            </div>
-            <div class="step reveal">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                    <h3>See your Claude instances</h3>
-                    <p>All running CLI sessions appear automatically with full details.</p>
-                </div>
-            </div>
-            <div class="step reveal">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                    <h3>Build your library</h3>
-                    <p>Create, organize, and share prompts with the community.</p>
+                <div class="showcase-image reveal" style="direction: ltr;">
+                    <img src="https://dummyimage.com/600x400/1a1a1a/666666&text=Prompt+Library" alt="Prompt Library">
                 </div>
             </div>
         </div>
@@ -717,11 +855,14 @@
 
     <section class="cta">
         <div class="cta-inner reveal">
-            <h2>Ready to get started?</h2>
+            <h2>Ready to supercharge your workflow?</h2>
             <p>Free, open source, and built with SwiftUI for macOS.</p>
             <div class="cta-buttons">
-                <a href="https://github.com/daniellauding/claude-manager/releases/latest" class="btn btn-primary btn-large">
+                <a href="https://github.com/daniellauding/claude-manager/releases/latest" class="btn btn-gradient btn-large">
                     Download for macOS
+                </a>
+                <a href="https://github.com/daniellauding/claude-manager" class="btn btn-secondary btn-large">
+                    Star on GitHub
                 </a>
             </div>
         </div>
@@ -734,53 +875,61 @@
                 <a href="https://github.com/daniellauding/claude-manager/issues">Issues</a>
                 <a href="https://github.com/daniellauding/claude-manager/releases">Releases</a>
             </div>
-            <span class="footer-copy">MIT License · Made with SwiftUI</span>
+            <span class="footer-copy">MIT License · Built with SwiftUI</span>
         </div>
     </footer>
 
     <script>
-        // Nav scroll effect
+        // Nav scroll
         window.addEventListener('scroll', () => {
-            const nav = document.getElementById('nav');
-            if (window.scrollY > 50) {
-                nav.classList.add('scrolled');
-            } else {
-                nav.classList.remove('scrolled');
-            }
+            document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 50);
         });
 
-        // Copy install command
+        // Copy command
         function copyInstall() {
             navigator.clipboard.writeText('brew install daniellauding/tap/claude-manager');
-            const copyText = document.getElementById('copyText');
-            copyText.textContent = 'Copied!';
-            setTimeout(() => {
-                copyText.textContent = 'Copy';
-            }, 2000);
+            const el = document.getElementById('copyText');
+            el.textContent = 'Copied!';
+            setTimeout(() => el.textContent = 'Copy', 2000);
         }
 
         // Scroll reveal
-        const reveals = document.querySelectorAll('.reveal');
-        const revealOnScroll = () => {
-            reveals.forEach(el => {
-                const top = el.getBoundingClientRect().top;
-                const windowHeight = window.innerHeight;
-                if (top < windowHeight - 100) {
-                    el.classList.add('visible');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
                 }
             });
-        };
+        }, { threshold: 0.1 });
 
-        window.addEventListener('scroll', revealOnScroll);
-        revealOnScroll();
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-        // Step hover
-        const steps = document.querySelectorAll('.step');
-        steps.forEach(step => {
-            step.addEventListener('mouseenter', () => {
-                steps.forEach(s => s.classList.remove('active'));
-                step.classList.add('active');
+        // Counter animation
+        const counters = document.querySelectorAll('.counting');
+        counters.forEach(counter => {
+            const target = parseInt(counter.dataset.target);
+            const duration = 2000;
+            const step = target / (duration / 16);
+            let current = 0;
+
+            const updateCounter = () => {
+                current += step;
+                if (current < target) {
+                    counter.textContent = Math.floor(current);
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    counter.textContent = target;
+                }
+            };
+
+            // Start when visible
+            const counterObserver = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    updateCounter();
+                    counterObserver.disconnect();
+                }
             });
+            counterObserver.observe(counter);
         });
     </script>
 </body>
